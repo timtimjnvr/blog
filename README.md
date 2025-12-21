@@ -6,3 +6,4 @@ hugo new site blog
 hugo new theme blog
 hugo server
 ```
+https://cloudcannon.com/tutorials/hugo-beginner-tutorial/
