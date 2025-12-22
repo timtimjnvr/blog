@@ -1,2 +1,5 @@
 <meta charset="utf-8">
 <title>{{ print .Page.Title }}</title>
+{{ with (templates.Defer (dict "key" "global")) }}
+{{ partial "css.html" . }}
+{{ end }}
