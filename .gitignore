@@ -1,5 +1,11 @@
 .zed
 .claude
 
+# MacOS
+.DS_Store
+
+# Go
+coverage.out
+
 # site compiled
 build

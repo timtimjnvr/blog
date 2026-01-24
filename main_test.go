@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+// Integration tests that verify the full site generation pipeline
+
 func TestSiteGeneration(t *testing.T) {
 	// Clean build directory first
 	os.RemoveAll("build")
@@ -135,135 +137,5 @@ func TestLinksAreValid(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-func TestExtractTitle(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"# Hello World\n\nContent here", "Hello World"},
-		{"Some text\n# Title Here\n\nMore", "Title Here"},
-		{"No heading here", "Untitled"},
-		{"## Only H2\n\nNo H1", "Untitled"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.expected, func(t *testing.T) {
-			result := extractTitle([]byte(tt.input))
-			if result != tt.expected {
-				t.Errorf("extractTitle(%q) = %q, want %q", tt.input, result, tt.expected)
-			}
-		})
-	}
-}
-
-func TestConvertMdLinksToHtml(t *testing.T) {
-	tests := []struct {
-		name          string
-		html          string
-		sourceRelPath string
-		expected      string
-	}{
-		{
-			name:          "home to posts/index",
-			html:          `<a href="posts/index.md">Articles</a>`,
-			sourceRelPath: "home.md",
-			expected:      `<a href="posts/index.html">Articles</a>`,
-		},
-		{
-			name:          "posts/index to post",
-			html:          `<a href="hello.md">Hello</a>`,
-			sourceRelPath: "posts/index.md",
-			expected:      `<a href="../post/hello.html">Hello</a>`,
-		},
-		{
-			name:          "post to posts/index",
-			html:          `<a href="index.md">Back</a>`,
-			sourceRelPath: "posts/hello.md",
-			expected:      `<a href="../posts/index.html">Back</a>`,
-		},
-		{
-			name:          "post to home",
-			html:          `<a href="../home.md">Accueil</a>`,
-			sourceRelPath: "posts/hello.md",
-			expected:      `<a href="../index.html">Accueil</a>`,
-		},
-		{
-			name:          "external links unchanged",
-			html:          `<a href="https://example.com">External</a>`,
-			sourceRelPath: "home.md",
-			expected:      `<a href="https://example.com">External</a>`,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := convertMdLinksToHtml(tt.html, tt.sourceRelPath)
-			if result != tt.expected {
-				t.Errorf("convertMdLinksToHtml(%q, %q) = %q, want %q",
-					tt.html, tt.sourceRelPath, result, tt.expected)
-			}
-		})
-	}
-}
-
-func TestResolveOutputPath(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"home.md", "index.html"},
-		{"posts/index.md", "posts/index.html"},
-		{"posts/hello.md", "post/hello.html"},
-		{"posts/my-article.md", "post/my-article.html"},
-		{"other.md", "other.html"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			result := resolveOutputPath(tt.input)
-			if result != tt.expected {
-				t.Errorf("resolveOutputPath(%q) = %q, want %q", tt.input, result, tt.expected)
-			}
-		})
-	}
-}
-
-func TestApplySubstitutions(t *testing.T) {
-	template := `<title>{{title}}</title><body>{{content}}</body>`
-
-	ctx := &PageContext{
-		Source:      []byte("# Test Title\n\nSome content"),
-		RelPath:     "home.md",
-		HTMLContent: `<h1>Test Title</h1><p>Some content</p>`,
-	}
-
-	result := applySubstitutions(template, ctx)
-
-	if !strings.Contains(result, "<title>Test Title</title>") {
-		t.Errorf("expected title substitution, got %q", result)
-	}
-
-	if !strings.Contains(result, "<body><h1>Test Title</h1><p>Some content</p></body>") {
-		t.Errorf("expected content substitution, got %q", result)
-	}
-}
-
-func TestApplySubstitutionsWithLinks(t *testing.T) {
-	template := `{{content}}`
-
-	ctx := &PageContext{
-		Source:      []byte("# Test\n\n[Link](posts/index.md)"),
-		RelPath:     "home.md",
-		HTMLContent: `<a href="posts/index.md">Link</a>`,
-	}
-
-	result := applySubstitutions(template, ctx)
-
-	expected := `<a href="posts/index.html">Link</a>`
-	if result != expected {
-		t.Errorf("applySubstitutions with links: got %q, want %q", result, expected)
 	}
 }

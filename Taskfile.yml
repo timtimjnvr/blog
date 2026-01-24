@@ -1,0 +1,201 @@
+version: "3"
+
+vars:
+  BUILD_DIR: build
+  CONTENT_DIR: content
+  GOLANGCI_LINT_VERSION: v1.62.2
+
+tasks:
+  setup:
+    desc: Install all required tools
+    cmds:
+      - task: setup:golangci-lint
+      - echo "Setup complete!"
+
+  setup:golangci-lint:
+    desc: Install golangci-lint
+    cmds:
+      - |
+        if command -v golangci-lint &> /dev/null; then
+          echo "golangci-lint already installed: $(golangci-lint --version)"
+        else
+          echo "Installing golangci-lint {{.GOLANGCI_LINT_VERSION}}..."
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin {{.GOLANGCI_LINT_VERSION}}
+          echo "golangci-lint installed successfully"
+        fi
+
+  setup:task:
+    desc: Show instructions to install Task
+    cmds:
+      - |
+        echo "To install Task:"
+        echo ""
+        echo "  macOS:   brew install go-task"
+        echo "  Linux:   sh -c \"\$(curl --location https://taskfile.dev/install.sh)\" -- -d -b ~/.local/bin"
+        echo "  Windows: choco install go-task"
+        echo ""
+        echo "See https://taskfile.dev/installation/ for more options"
+
+  setup:check:
+    desc: Check if all required tools are installed
+    cmds:
+      - |
+        echo "Checking required tools..."
+        echo ""
+        printf "%-20s %s\n" "Go:" "$(go version 2>/dev/null || echo 'NOT INSTALLED')"
+        printf "%-20s %s\n" "Task:" "$(task --version 2>/dev/null || echo 'NOT INSTALLED')"
+        printf "%-20s %s\n" "golangci-lint:" "$(golangci-lint --version 2>/dev/null | head -1 || echo 'NOT INSTALLED (optional)')"
+        echo ""
+        if ! command -v go &> /dev/null; then
+          echo "ERROR: Go is required. Install from https://go.dev/dl/"
+          exit 1
+        fi
+        echo "All required tools are installed!"
+
+  default:
+    desc: Run all validation tasks
+    cmds:
+      - task: validate
+
+  validate:
+    desc: Run all validation (fmt, lint, test, build)
+    cmds:
+      - task: fmt:check
+      - task: lint
+      - task: test
+      - task: build
+
+  # Formatting
+  fmt:
+    desc: Format all Go files
+    cmds:
+      - go fmt ./...
+
+  fmt:check:
+    desc: Check if Go files are formatted
+    cmds:
+      - test -z "$(gofmt -l .)" || (echo "Files not formatted:" && gofmt -l . && exit 1)
+
+  # Linting
+  lint:
+    desc: Run golangci-lint (skipped if not installed)
+    cmds:
+      - |
+        if command -v golangci-lint &> /dev/null; then
+          golangci-lint run ./...
+        else
+          echo "golangci-lint not installed, skipping lint (run 'task setup' to install)"
+        fi
+
+  # Testing
+  test:
+    desc: Run all tests
+    cmds:
+      - go test ./...
+
+  test:verbose:
+    desc: Run all tests with verbose output
+    cmds:
+      - go test ./... -v
+
+  test:coverage:
+    desc: Run tests with coverage report
+    cmds:
+      - go test ./... -coverprofile=coverage.out
+      - go tool cover -func=coverage.out
+
+  test:coverage:html:
+    desc: Generate HTML coverage report
+    cmds:
+      - go test ./... -coverprofile=coverage.out
+      - go tool cover -html=coverage.out -o coverage.html
+      - echo "Coverage report generated at coverage.html"
+
+  test:unit:
+    desc: Run only unit tests (internal packages)
+    cmds:
+      - go test ./internal/...
+
+  test:integration:
+    desc: Run only integration tests
+    cmds:
+      - go test -run "TestSiteGeneration|TestLinksAreValid|TestMarkdownFiles" .
+
+  # Building
+  build:
+    desc: Build the binary
+    cmds:
+      - go build -o blog .
+
+  build:check:
+    desc: Verify the project compiles
+    cmds:
+      - go build ./...
+
+  # Site generation
+  generate:
+    desc: Generate the static site
+    cmds:
+      - rm -rf {{.BUILD_DIR}}
+      - go run .
+
+  generate:watch:
+    desc: Generate site and watch for changes (requires fswatch)
+    deps: [generate]
+    cmds:
+      - |
+        if ! command -v fswatch &> /dev/null; then
+          echo "fswatch not installed. Install with: brew install fswatch"
+          exit 1
+        fi
+        echo "Watching for changes..."
+        while true; do
+          fswatch -1 {{.CONTENT_DIR}} internal models && task generate
+        done
+
+  # Cleaning
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - rm -rf {{.BUILD_DIR}}
+      - rm -f blog
+      - rm -f coverage.out coverage.html
+
+  clean:all:
+    desc: Remove all generated files including Go cache
+    cmds:
+      - task: clean
+      - go clean -cache
+
+  # Development helpers
+  dev:
+    desc: Run generate and serve locally
+    deps: [generate]
+    cmds:
+      - echo "Serving at http://localhost:8080"
+      - cd {{.BUILD_DIR}} && python3 -m http.server 8080
+
+  # Dependencies
+  deps:
+    desc: Download Go dependencies
+    cmds:
+      - go mod download
+
+  deps:tidy:
+    desc: Tidy Go modules
+    cmds:
+      - go mod tidy
+
+  deps:verify:
+    desc: Verify Go dependencies
+    cmds:
+      - go mod verify
+
+  # CI helpers
+  ci:
+    desc: Run CI pipeline (used in CI/CD)
+    cmds:
+      - task: deps:verify
+      - task: fmt:check
+      - task: build:check
+      - task: test:coverage
