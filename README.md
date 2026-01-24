@@ -1,7 +1,7 @@
-blog
+# blog
 
-This project is my static site generator. I want to seamlessly write articles in markdown and publish them to a website.
+This project is my static site generator.
 
-## todo
+## Compile the website
 
-[] Create index.html
+`go run .`

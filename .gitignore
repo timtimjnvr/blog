@@ -1,4 +1,5 @@
-.idea/
+.zed
+.claude
 
 # site compiled
-build/*
+build
