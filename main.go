@@ -16,7 +16,7 @@ func main() {
 
 	// Generate site
 	gen := generator.New(registry)
-	if err := gen.Generate("content", "build"); err != nil {
+	if err := gen.Generate("content", "target/build"); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		panic(err)
 	}

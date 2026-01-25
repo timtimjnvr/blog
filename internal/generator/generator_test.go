@@ -95,7 +95,9 @@ func TestGenerator_Generate_CreatesDirectories(t *testing.T) {
 
 	// Create nested content
 	postsDir := filepath.Join(contentDir, "posts")
-	os.MkdirAll(postsDir, 0755)
+	if err := os.MkdirAll(postsDir, 0755); err != nil {
+		t.Fatalf("failed to create posts dir: %v", err)
+	}
 	err := os.WriteFile(filepath.Join(postsDir, "article.md"), []byte("# Article"), 0644)
 	if err != nil {
 		t.Fatalf("failed to create test file: %v", err)
@@ -121,9 +123,15 @@ func TestGenerator_Generate_SkipsNonMarkdown(t *testing.T) {
 	buildDir := t.TempDir()
 
 	// Create markdown and non-markdown files
-	os.WriteFile(filepath.Join(contentDir, "page.md"), []byte("# Page"), 0644)
-	os.WriteFile(filepath.Join(contentDir, "image.png"), []byte("fake image"), 0644)
-	os.WriteFile(filepath.Join(contentDir, "style.css"), []byte("body {}"), 0644)
+	if err := os.WriteFile(filepath.Join(contentDir, "page.md"), []byte("# Page"), 0644); err != nil {
+		t.Fatalf("failed to create page.md: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(contentDir, "image.png"), []byte("fake image"), 0644); err != nil {
+		t.Fatalf("failed to create image.png: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(contentDir, "style.css"), []byte("body {}"), 0644); err != nil {
+		t.Fatalf("failed to create style.css: %v", err)
+	}
 
 	registry := substitution.NewRegistry[*context.PageContext]()
 	gen := New(registry).WithTemplate("{{content}}")
@@ -175,7 +183,9 @@ func TestGenerator_Generate_HomePageRouting(t *testing.T) {
 	buildDir := t.TempDir()
 
 	// home.md should become index.html
-	os.WriteFile(filepath.Join(contentDir, "home.md"), []byte("# Home"), 0644)
+	if err := os.WriteFile(filepath.Join(contentDir, "home.md"), []byte("# Home"), 0644); err != nil {
+		t.Fatalf("failed to create home.md: %v", err)
+	}
 
 	registry := substitution.NewRegistry[*context.PageContext]()
 	gen := New(registry).WithTemplate("{{content}}")

@@ -7,5 +7,5 @@
 # Go
 coverage.out
 
-# site compiled
-build
+# generated site and compilation outputs
+target

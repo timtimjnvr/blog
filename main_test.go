@@ -10,8 +10,8 @@ import (
 
 func TestSiteGeneration(t *testing.T) {
 	// Clean build directory first
-	os.RemoveAll("build")
-	os.MkdirAll("build", 0755)
+	_ = os.RemoveAll("target/build")
+	_ = os.MkdirAll("target/build", 0755)
 
 	// Run the main function
 	main()
@@ -22,7 +22,7 @@ func TestSiteGeneration(t *testing.T) {
 		contains []string
 	}{
 		{
-			path: "build/index.html",
+			path: "target/build/index.html",
 			contains: []string{
 				"<h1>Bienvenue sur mon blog</h1>",
 				`<a href="posts/index.html">Articles</a>`,
@@ -30,7 +30,7 @@ func TestSiteGeneration(t *testing.T) {
 			},
 		},
 		{
-			path: "build/posts/index.html",
+			path: "target/build/posts/index.html",
 			contains: []string{
 				"<h1>Articles</h1>",
 				`<a href="../post/hello.html">Hello World</a>`,
@@ -38,7 +38,7 @@ func TestSiteGeneration(t *testing.T) {
 			},
 		},
 		{
-			path: "build/post/hello.html",
+			path: "target/build/post/hello.html",
 			contains: []string{
 				"<h1>Hello World</h1>",
 				`<a href="../posts/index.html">Articles</a>`,
@@ -46,7 +46,7 @@ func TestSiteGeneration(t *testing.T) {
 			},
 		},
 		{
-			path: "build/post/second-post.html",
+			path: "target/build/post/second-post.html",
 			contains: []string{
 				"<h1>Deuxième article</h1>",
 				`<a href="../index.html">Accueil</a>`,
@@ -107,8 +107,8 @@ func TestMarkdownFilesContainNoHtmlLinks(t *testing.T) {
 
 func TestLinksAreValid(t *testing.T) {
 	// Clean and regenerate
-	os.RemoveAll("build")
-	os.MkdirAll("build", 0755)
+	_ = os.RemoveAll("target/build")
+	_ = os.MkdirAll("target/build", 0755)
 	main()
 
 	// Define expected links and their targets
@@ -117,11 +117,11 @@ func TestLinksAreValid(t *testing.T) {
 		linkHref   string
 		targetPath string
 	}{
-		{"build/index.html", `href="posts/index.html"`, "build/posts/index.html"},
-		{"build/posts/index.html", `href="../post/hello.html"`, "build/post/hello.html"},
-		{"build/posts/index.html", `href="../index.html"`, "build/index.html"},
-		{"build/post/hello.html", `href="../posts/index.html"`, "build/posts/index.html"},
-		{"build/post/second-post.html", `href="../index.html"`, "build/index.html"},
+		{"target/build/index.html", `href="posts/index.html"`, "target/build/posts/index.html"},
+		{"target/build/posts/index.html", `href="../post/hello.html"`, "target/build/post/hello.html"},
+		{"target/build/posts/index.html", `href="../index.html"`, "target/build/index.html"},
+		{"target/build/post/hello.html", `href="../posts/index.html"`, "target/build/posts/index.html"},
+		{"target/build/post/second-post.html", `href="../index.html"`, "target/build/index.html"},
 	}
 
 	for _, tt := range linkTests {

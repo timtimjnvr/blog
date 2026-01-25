@@ -1,9 +1,10 @@
 version: "3"
 
 vars:
-  BUILD_DIR: build
+  BUILD_SITE_DIR: target/build
+  BUILD_DIR: target
   CONTENT_DIR: content
-  GOLANGCI_LINT_VERSION: v1.62.2
+  GOLANGCI_LINT_VERSION: v2.8.0
 
 tasks:
   setup:
@@ -24,34 +25,6 @@ tasks:
           echo "golangci-lint installed successfully"
         fi
 
-  setup:task:
-    desc: Show instructions to install Task
-    cmds:
-      - |
-        echo "To install Task:"
-        echo ""
-        echo "  macOS:   brew install go-task"
-        echo "  Linux:   sh -c \"\$(curl --location https://taskfile.dev/install.sh)\" -- -d -b ~/.local/bin"
-        echo "  Windows: choco install go-task"
-        echo ""
-        echo "See https://taskfile.dev/installation/ for more options"
-
-  setup:check:
-    desc: Check if all required tools are installed
-    cmds:
-      - |
-        echo "Checking required tools..."
-        echo ""
-        printf "%-20s %s\n" "Go:" "$(go version 2>/dev/null || echo 'NOT INSTALLED')"
-        printf "%-20s %s\n" "Task:" "$(task --version 2>/dev/null || echo 'NOT INSTALLED')"
-        printf "%-20s %s\n" "golangci-lint:" "$(golangci-lint --version 2>/dev/null | head -1 || echo 'NOT INSTALLED (optional)')"
-        echo ""
-        if ! command -v go &> /dev/null; then
-          echo "ERROR: Go is required. Install from https://go.dev/dl/"
-          exit 1
-        fi
-        echo "All required tools are installed!"
-
   default:
     desc: Run all validation tasks
     cmds:
@@ -65,7 +38,6 @@ tasks:
       - task: test
       - task: build
 
-  # Formatting
   fmt:
     desc: Format all Go files
     cmds:
@@ -76,7 +48,6 @@ tasks:
     cmds:
       - test -z "$(gofmt -l .)" || (echo "Files not formatted:" && gofmt -l . && exit 1)
 
-  # Linting
   lint:
     desc: Run golangci-lint (skipped if not installed)
     cmds:
@@ -87,29 +58,23 @@ tasks:
           echo "golangci-lint not installed, skipping lint (run 'task setup' to install)"
         fi
 
-  # Testing
   test:
     desc: Run all tests
     cmds:
       - go test ./...
 
-  test:verbose:
-    desc: Run all tests with verbose output
-    cmds:
-      - go test ./... -v
-
   test:coverage:
     desc: Run tests with coverage report
     cmds:
-      - go test ./... -coverprofile=coverage.out
-      - go tool cover -func=coverage.out
+      - go test ./... -coverprofile={{.BUILD_DIR}}/coverage.out
+      - go tool cover -func={{.BUILD_DIR}}/coverage.out
 
   test:coverage:html:
     desc: Generate HTML coverage report
     cmds:
-      - go test ./... -coverprofile=coverage.out
-      - go tool cover -html=coverage.out -o coverage.html
-      - echo "Coverage report generated at coverage.html"
+      - go test ./... -coverprofile={{.BUILD_DIR}}/coverage.out
+      - go tool cover -html={{.BUILD_DIR}}/coverage.out -o {{.BUILD_DIR}}/coverage.html
+      - echo "Coverage report generated at {{.BUILD_DIR}}/coverage.html"
 
   test:unit:
     desc: Run only unit tests (internal packages)
@@ -121,81 +86,53 @@ tasks:
     cmds:
       - go test -run "TestSiteGeneration|TestLinksAreValid|TestMarkdownFiles" .
 
-  # Building
   build:
     desc: Build the binary
     cmds:
-      - go build -o blog .
+      - go build -o {{.BUILD_DIR}}/
 
-  build:check:
-    desc: Verify the project compiles
-    cmds:
-      - go build ./...
-
-  # Site generation
   generate:
     desc: Generate the static site
     cmds:
-      - rm -rf {{.BUILD_DIR}}
+      - rm -rf {{.BUILD_SITE_DIR}}
       - go run .
 
-  generate:watch:
-    desc: Generate site and watch for changes (requires fswatch)
-    deps: [generate]
-    cmds:
-      - |
-        if ! command -v fswatch &> /dev/null; then
-          echo "fswatch not installed. Install with: brew install fswatch"
-          exit 1
-        fi
-        echo "Watching for changes..."
-        while true; do
-          fswatch -1 {{.CONTENT_DIR}} internal models && task generate
-        done
-
-  # Cleaning
   clean:
     desc: Remove build artifacts
     cmds:
       - rm -rf {{.BUILD_DIR}}
-      - rm -f blog
-      - rm -f coverage.out coverage.html
 
-  clean:all:
-    desc: Remove all generated files including Go cache
-    cmds:
-      - task: clean
-      - go clean -cache
-
-  # Development helpers
   dev:
     desc: Run generate and serve locally
     deps: [generate]
     cmds:
       - echo "Serving at http://localhost:8080"
-      - cd {{.BUILD_DIR}} && python3 -m http.server 8080
+      - cd {{.BUILD_SITE_DIR}} && python3 -m http.server 8080
 
-  # Dependencies
-  deps:
-    desc: Download Go dependencies
+  dev:watch:
+    desc: Serve locally with live reload (requires browser-sync and fswatch)
     cmds:
-      - go mod download
-
-  deps:tidy:
-    desc: Tidy Go modules
-    cmds:
-      - go mod tidy
+      - |
+        if ! command -v browser-sync &> /dev/null; then
+          echo "browser-sync not installed. Install with: npm install -g browser-sync"
+          exit 1
+        fi
+        if ! command -v fswatch &> /dev/null; then
+          echo "fswatch not installed. Install with: brew install fswatch"
+          exit 1
+        fi
+        task generate
+        echo "Starting browser-sync with live reload..."
+        browser-sync start --server {{.BUILD_SITE_DIR}} --watch &
+        BROWSER_SYNC_PID=$!
+        trap "kill $BROWSER_SYNC_PID 2>/dev/null" EXIT
+        sleep 2
+        echo "Watching for changes in {{.CONTENT_DIR}}, internal, models..."
+        while true; do
+          fswatch -1 {{.CONTENT_DIR}} internal models && task generate && browser-sync reload
+        done
 
   deps:verify:
     desc: Verify Go dependencies
     cmds:
       - go mod verify
-
-  # CI helpers
-  ci:
-    desc: Run CI pipeline (used in CI/CD)
-    cmds:
-      - task: deps:verify
-      - task: fmt:check
-      - task: build:check
-      - task: test:coverage

@@ -4,7 +4,7 @@
 
 # Bienvenue sur mon blog
 
-Ceci est mon site personnel où je partage mes réflexions et articles.
+Ceci est mon site personnel où je partage mes réflexions et articles
 
 ## À propos
 
