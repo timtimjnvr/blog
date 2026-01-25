@@ -12,6 +12,8 @@ Ceci est un deuxième article pour démontrer la liste d'articles.
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 
+![Image exemple](../assets/images/4482744.png)
+
 - Point 1
 - Point 2
 - Point 3
