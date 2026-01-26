@@ -4,6 +4,9 @@
 # MacOS
 .DS_Store
 
+# Task
+.task
+
 # Go
 coverage.out
 
