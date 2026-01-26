@@ -40,9 +40,9 @@ func ConvertMdLinksToHtml(html string, sourceRelPath string) string {
 
 		// Resolve the absolute path of the linked file relative to source
 		var targetRelPath string
-		if strings.HasPrefix(linkPath, "../") {
+		if after, ok := strings.CutPrefix(linkPath, "../"); ok {
 			// Go up one directory
-			targetRelPath = filepath.Join(filepath.Dir(sourceDir), strings.TrimPrefix(linkPath, "../"))
+			targetRelPath = filepath.Join(filepath.Dir(sourceDir), after)
 		} else {
 			targetRelPath = filepath.Join(sourceDir, linkPath)
 		}

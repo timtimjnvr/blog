@@ -20,9 +20,6 @@ func TestNew(t *testing.T) {
 	if gen.registry != registry {
 		t.Error("registry not set correctly")
 	}
-	if gen.converter == nil {
-		t.Error("converter is nil")
-	}
 	if gen.template == "" {
 		t.Error("template is empty")
 	}

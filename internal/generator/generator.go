@@ -9,6 +9,7 @@ import (
 
 	"github.com/timtimjnvr/blog/internal/context"
 	"github.com/timtimjnvr/blog/internal/markdown"
+	"github.com/timtimjnvr/blog/internal/styling"
 	"github.com/timtimjnvr/blog/internal/substitution"
 	"github.com/timtimjnvr/blog/internal/validator"
 )
@@ -18,20 +19,26 @@ var defaultTemplate string
 
 // Generator handles site generation
 type Generator struct {
-	registry   *substitution.Registry[*context.PageContext]
-	converter  *markdown.Converter
-	template   string
-	validators *validator.Runner
+	registry    *substitution.Registry[*context.PageContext]
+	styleConfig *styling.Config
+	template    string
+	validators  *validator.Runner
 }
 
 // New creates a new generator with the given substitution registry
 func New(registry *substitution.Registry[*context.PageContext]) *Generator {
 	return &Generator{
-		registry:   registry,
-		converter:  markdown.NewConverter(),
-		template:   defaultTemplate,
-		validators: validator.NewRunner(),
+		registry:    registry,
+		styleConfig: nil,
+		template:    defaultTemplate,
+		validators:  validator.NewRunner(),
 	}
+}
+
+// WithStyleConfig sets a style configuration for CSS class injection
+func (g *Generator) WithStyleConfig(config *styling.Config) *Generator {
+	g.styleConfig = config
+	return g
 }
 
 // WithValidator adds a validator to the generator
@@ -117,8 +124,14 @@ func (g *Generator) processMarkdown(path, relPath, buildDir string) error {
 		return fmt.Errorf("reading %s: %w", path, err)
 	}
 
+	// Determine context from path (e.g., "post" for files in posts/)
+	pageContext := g.deriveContext(relPath)
+
+	// Create converter with styling config and context
+	converter := markdown.NewConverter(g.styleConfig, pageContext)
+
 	// Convert markdown to HTML
-	htmlContent, err := g.converter.Convert(source)
+	htmlContent, err := converter.Convert(source)
 	if err != nil {
 		return fmt.Errorf("converting %s: %w", path, err)
 	}
@@ -148,6 +161,15 @@ func (g *Generator) processMarkdown(path, relPath, buildDir string) error {
 
 	fmt.Printf("Generated: %s -> %s\n", path, outPath)
 	return nil
+}
+
+// deriveContext determines the styling context from the file path.
+// For example, files in "posts/" get context "post".
+func (g *Generator) deriveContext(relPath string) string {
+	if strings.HasPrefix(relPath, "posts/") {
+		return "post"
+	}
+	return ""
 }
 
 // copyAsset copies a static file to the build directory
