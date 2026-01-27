@@ -5,12 +5,14 @@ vars:
   BUILD_DIR: target
   CONTENT_DIR: content
   GOLANGCI_LINT_VERSION: v2.8.0
+  TAILWIND_VERSION: v3.4.17
 
 tasks:
   setup:
     desc: Install all required tools
     cmds:
       - task: setup:golangci-lint
+      - task: setup:tailwind
       - echo "Setup complete!"
 
   setup:golangci-lint:
@@ -23,6 +25,27 @@ tasks:
           echo "Installing golangci-lint {{.GOLANGCI_LINT_VERSION}}..."
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin {{.GOLANGCI_LINT_VERSION}}
           echo "golangci-lint installed successfully"
+        fi
+
+  setup:tailwind:
+    desc: Download Tailwind standalone CLI
+    cmds:
+      - |
+        if [ -f ./{{.BUILD_DIR}}/bin/tailwindcss ]; then
+          echo "Tailwind CLI already installed"
+        else
+          echo "Downloading Tailwind CLI {{.TAILWIND_VERSION}}..."
+          mkdir -p {{.BUILD_DIR}}/bin
+          ARCH=$(uname -m)
+          if [ "$ARCH" = "arm64" ]; then
+            BINARY="tailwindcss-macos-arm64"
+          else
+            BINARY="tailwindcss-macos-x64"
+          fi
+          curl -sLO "https://github.com/tailwindlabs/tailwindcss/releases/download/{{.TAILWIND_VERSION}}/$BINARY"
+          chmod +x "$BINARY"
+          mv "$BINARY" ./{{.BUILD_DIR}}/bin/tailwindcss
+          echo "Tailwind CLI installed to ./{{.BUILD_DIR}}/bin/tailwindcss"
         fi
 
   default:
@@ -89,13 +112,25 @@ tasks:
   build:
     desc: Build the binary
     cmds:
-      - go build -o {{.BUILD_DIR}}/
+      - mkdir -p {{.BUILD_DIR}}/bin
+      - go build -o {{.BUILD_DIR}}/bin/
 
   generate:
     desc: Generate the static site
     cmds:
       - rm -rf {{.BUILD_SITE_DIR}}
       - go run .
+      - task: css:build
+
+  css:build:
+    desc: Build Tailwind CSS
+    cmds:
+      - ./{{.BUILD_DIR}}/bin/tailwindcss -i ./styles/input.css -o ./{{.BUILD_SITE_DIR}}/styles.css --minify
+
+  css:watch:
+    desc: Watch and rebuild Tailwind CSS
+    cmds:
+      - ./{{.BUILD_DIR}}/bin/tailwindcss -i ./styles/input.css -o ./{{.BUILD_SITE_DIR}}/styles.css --watch
 
   clean:
     desc: Remove build artifacts
@@ -127,9 +162,9 @@ tasks:
         BROWSER_SYNC_PID=$!
         trap "kill $BROWSER_SYNC_PID 2>/dev/null" EXIT
         sleep 2
-        echo "Watching for changes in {{.CONTENT_DIR}}, internal, models..."
+        echo "Watching for changes in {{.CONTENT_DIR}}, internal, models, styles, tailwind.config.js..."
         while true; do
-          fswatch -1 {{.CONTENT_DIR}} internal models && task generate && browser-sync reload
+          fswatch -1 {{.CONTENT_DIR}} internal models styles tailwind.config.js && task generate && browser-sync reload
         done
 
   deps:verify:

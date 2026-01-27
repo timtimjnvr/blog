@@ -29,12 +29,15 @@ The generated site will be in the `target/build/` directory.
 ```
 blog/
 ├── main.go                      # Entry point
+├── tailwind.config.js           # Tailwind CSS configuration
+├── styles/
+│   └── input.css                # Tailwind CSS input file
 ├── styles.json                  # Optional custom styling configuration
 ├── internal/
 │   ├── context/                 # Page context interface and implementation
 │   ├── generator/               # Site generation
 │   │   ├── generator.go         # Main generation logic
-│   │   └── page.html            # Embedded HTML template (with Tailwind CDN)
+│   │   └── page.html            # Embedded HTML template
 │   ├── markdown/                # Markdown processing
 │   │   ├── converter.go         # Goldmark wrapper with styling support
 │   │   └── links.go             # Link conversion and path resolution
@@ -79,11 +82,14 @@ HTML Files (target/build/)
 
 ### Styling System
 
-The generator uses [Tailwind CSS](https://tailwindcss.com/) via CDN with the [Typography plugin](https://tailwindcss.com/docs/typography-plugin) for automatic prose styling.
+The generator uses [Tailwind CSS](https://tailwindcss.com/) with the [Typography plugin](https://tailwindcss.com/docs/typography-plugin) for automatic prose styling. 
+CSS is built using the [Tailwind Standalone CLI](https://tailwindcss.com/blog/standalone-cli).
 
-**Default behavior**: All Markdown content is wrapped in `<article class="prose prose-lg">`, which applies consistent typography styles to headings, paragraphs, links, code blocks, etc.
+* **Default behavior**: All Markdown content is wrapped in `<article class="prose prose-lg">`, which applies consistent typography styles to headings, paragraphs, links, code blocks, etc.
 
-**Custom styling**: Create a `styles.json` file at the project root to add CSS classes to specific elements:
+  * Tailwind configuration: Customize the typography styles in `tailwind.config.js`. See the [Typography plugin documentation](https://tailwindcss.com/docs/typography-plugin) for all available options.
+
+* **Custom styling**: Create a `styles.json` file at the project root to add CSS classes to specific elements:
 
 ```json
 {
@@ -101,29 +107,13 @@ The generator uses [Tailwind CSS](https://tailwindcss.com/) via CDN with the [Ty
 }
 ```
 
-**Supported element keys**: `heading1`, `heading2`, `heading3`, `heading4`, `heading5`, `heading6`, `paragraph`, `link`, `image`, `codeblock`, `code`, `blockquote`, `list`, `listitem`.
+  * Supported element keys: `heading1`, `heading2`, `heading3`, `heading4`, `heading5`, `heading6`, `paragraph`, `link`, `image`, `codeblock`, `code`, `blockquote`, `list`, `listitem`.
 
-**Contexts**: Files in `posts/` automatically get the `post` context, allowing context-specific styling.
+  * Contexts: Files in `posts/` automatically get the `post` context, allowing context-specific styling.
 
-**Validation**: Invalid keys cause the generator to exit with an error listing valid options.
+  * Validation: Invalid keys cause the generator to exit with an error listing valid options.
 
-**Inline attributes**: For precise control on specific elements, use the inline attribute syntax directly in Markdown (take precedence over `styles.json`) :
-
-```markdown
-# Custom Title {.text-red-500 #main-title}
-
-## Section {.font-bold .uppercase}
-
-### Another heading {data-testid=my-heading}
-```
-
-This generates:
-
-```html
-<h1 class="text-red-500" id="main-title">Custom Title</h1>
-<h2 class="font-bold uppercase">Section</h2>
-<h3 data-testid="my-heading">Another heading</h3>
-```
+* **Inline attributes**: For precise control on specific elements, use the inline attribute syntax directly in Markdown (take precedence over `styles.json`) :
 
 ## Available Tasks
 

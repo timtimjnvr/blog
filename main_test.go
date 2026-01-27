@@ -122,8 +122,7 @@ Some content here.
 		contains string
 	}{
 		{"DOCTYPE", "<!DOCTYPE html>"},
-		{"Tailwind CDN", "cdn.tailwindcss.com"},
-		{"Typography plugin", "plugins=typography"},
+		{"CSS stylesheet link", `href="/styles.css"`},
 		{"Prose wrapper", `class="prose`},
 		{"Article element", "<article"},
 	}
