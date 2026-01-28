@@ -31,8 +31,8 @@ blog/
 ├── main.go                      # Entry point
 ├── tailwind.config.js           # Tailwind CSS configuration
 ├── styles/
-│   └── input.css                # Tailwind CSS input file
-├── styles.json                  # Optional custom styling configuration
+│   ├── input.css                # Tailwind CSS input file
+│   └── styles.json              # Optional custom styling configuration
 ├── internal/
 │   ├── context/                 # Page context interface and implementation
 │   ├── generator/               # Site generation
@@ -42,14 +42,12 @@ blog/
 │   │   ├── converter.go         # Goldmark wrapper with styling support
 │   │   └── links.go             # Link conversion and path resolution
 │   ├── styling/                 # CSS styling system
-│   │   ├── config.go            # Style configuration (element → CSS classes)
-│   │   └── transformer.go       # Goldmark AST transformer for class injection
 │   ├── substitution/            # Template substitution system
 │   │   ├── registry.go          # Generic registry for substitutions
 │   │   ├── title.go             # {{title}} substitution
 │   │   └── content.go           # {{content}} substitution
 │   └── validator/               # Post-generation validation
-│       └── image.go             # Image reference validator
+├── scripts/                     # JavaScript files
 ├── content/                     # Markdown source files
 │   ├── home.md                  # Homepage (becomes index.html)
 │   ├── posts/                   # Blog posts
@@ -89,7 +87,7 @@ CSS is built using the [Tailwind Standalone CLI](https://tailwindcss.com/blog/st
 
   * Tailwind configuration: Customize the typography styles in `tailwind.config.js`. See the [Typography plugin documentation](https://tailwindcss.com/docs/typography-plugin) for all available options.
 
-* **Custom styling**: Create a `styles.json` file at the project root to add CSS classes to specific elements:
+* **Custom styling**: Create a `styles/styles.json` file to add CSS classes to specific elements:
 
 ```json
 {
@@ -113,7 +111,7 @@ CSS is built using the [Tailwind Standalone CLI](https://tailwindcss.com/blog/st
 
   * Validation: Invalid keys cause the generator to exit with an error listing valid options.
 
-* **Inline attributes**: For precise control on specific elements, use the inline attribute syntax directly in Markdown (take precedence over `styles.json`) :
+* **Inline attributes**: For precise control on specific elements, use the inline attribute syntax directly in Markdown (take precedence over `styles.json`).
 
 ## Available Tasks
 

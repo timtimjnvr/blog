@@ -14,12 +14,30 @@ import (
 )
 
 // Helper to create a generator with standard configuration
+// Uses a simple template without script references for most tests
 func createGenerator(styleConfig *styling.Config) *generator.Generator {
 	registry := substitution.NewRegistry[*context.PageContext]()
 	registry.Register(&substitution.TitleSubstituter{})
 	registry.Register(&substitution.ContentSubstituter{})
 
+	// Simple template without script references for tests
+	template := `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{title}}</title>
+  <link href="/styles.css" rel="stylesheet">
+</head>
+<body class="bg-white min-h-screen">
+  <article class="prose prose-lg max-w-3xl mx-auto py-8 px-4">
+    {{content}}
+  </article>
+</body>
+</html>`
+
 	gen := generator.New(registry).
+		WithTemplate(template).
 		WithValidator(validator.NewImageValidator())
 
 	if styleConfig != nil {
@@ -131,6 +149,166 @@ Some content here.
 		if !strings.Contains(html, check.contains) {
 			t.Errorf("%s: expected %q in output", check.desc, check.contains)
 		}
+	}
+}
+
+func TestIntegration_ScriptsCopied(t *testing.T) {
+	contentDir, buildDir := setupTestContent(t, map[string]string{
+		"page.md": "# Page",
+	})
+
+	// Create scripts directory
+	scriptsDir := t.TempDir()
+	scriptContent := `(function() { console.log("test"); })();`
+	if err := os.WriteFile(filepath.Join(scriptsDir, "test.js"), []byte(scriptContent), 0644); err != nil {
+		t.Fatalf("failed to create script: %v", err)
+	}
+
+	gen := createGenerator(nil).WithScriptsDir(scriptsDir)
+	err := gen.Generate(contentDir, buildDir)
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	// Check script was copied
+	copiedScript, err := os.ReadFile(filepath.Join(buildDir, "scripts/test.js"))
+	if err != nil {
+		t.Fatalf("script should be copied: %v", err)
+	}
+
+	if string(copiedScript) != scriptContent {
+		t.Errorf("script content mismatch, got: %s", copiedScript)
+	}
+}
+
+func TestIntegration_ScriptValidatorFailsOnMissingScript(t *testing.T) {
+	contentDir, buildDir := setupTestContent(t, map[string]string{
+		"page.md": "# Page",
+	})
+
+	// Use custom template that references a non-existent script
+	registry := substitution.NewRegistry[*context.PageContext]()
+	registry.Register(&substitution.TitleSubstituter{})
+	registry.Register(&substitution.ContentSubstituter{})
+
+	template := `<!DOCTYPE html>
+<html>
+<head>
+  <script src="/scripts/missing.js"></script>
+</head>
+<body>{{content}}</body>
+</html>`
+
+	gen := generator.New(registry).
+		WithTemplate(template).
+		WithValidator(validator.NewScriptValidator())
+
+	err := gen.Generate(contentDir, buildDir)
+	if err == nil {
+		t.Error("Generate() should fail when script is missing")
+	}
+
+	if !strings.Contains(err.Error(), "validation failed") {
+		t.Errorf("error should mention validation failed, got: %v", err)
+	}
+}
+
+func TestIntegration_DarkModeSupport(t *testing.T) {
+	contentDir, buildDir := setupTestContent(t, map[string]string{
+		"page.md": "# Page",
+	})
+
+	// Create scripts directory with dark-mode.js
+	scriptsDir := t.TempDir()
+	darkModeScript := `(function() { window.toggleTheme = function() {}; })();`
+	if err := os.WriteFile(filepath.Join(scriptsDir, "dark-mode.js"), []byte(darkModeScript), 0644); err != nil {
+		t.Fatalf("failed to create dark-mode.js: %v", err)
+	}
+
+	// Use template with dark mode support
+	registry := substitution.NewRegistry[*context.PageContext]()
+	registry.Register(&substitution.TitleSubstituter{})
+	registry.Register(&substitution.ContentSubstituter{})
+
+	template := `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>{{title}}</title>
+  <script src="/scripts/dark-mode.js"></script>
+</head>
+<body class="bg-white dark:bg-gray-900 min-h-screen">
+  <button onclick="toggleTheme()">Toggle Dark Mode</button>
+  <article class="prose prose-lg dark:prose-invert">
+    {{content}}
+  </article>
+</body>
+</html>`
+
+	gen := generator.New(registry).
+		WithTemplate(template).
+		WithScriptsDir(scriptsDir).
+		WithValidator(validator.NewScriptValidator())
+
+	err := gen.Generate(contentDir, buildDir)
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	content, err := os.ReadFile(filepath.Join(buildDir, "page.html"))
+	if err != nil {
+		t.Fatalf("failed to read output: %v", err)
+	}
+
+	html := string(content)
+
+	// Verify dark mode elements are present
+	checks := []struct {
+		desc     string
+		contains string
+	}{
+		{"dark mode script", `src="/scripts/dark-mode.js"`},
+		{"dark body class", `dark:bg-gray-900`},
+		{"prose invert class", `dark:prose-invert`},
+		{"toggle button", `toggleTheme()`},
+	}
+
+	for _, check := range checks {
+		if !strings.Contains(html, check.contains) {
+			t.Errorf("%s: expected %q in output", check.desc, check.contains)
+		}
+	}
+}
+
+func TestIntegration_DarkModeScriptCopied(t *testing.T) {
+	contentDir, buildDir := setupTestContent(t, map[string]string{
+		"page.md": "# Page",
+	})
+
+	// Create scripts directory with dark-mode.js
+	scriptsDir := t.TempDir()
+	darkModeScript := `(function() {
+  const STORAGE_KEY = 'theme';
+  function toggleTheme() { /* toggle */ }
+  window.toggleTheme = toggleTheme;
+})();`
+	if err := os.WriteFile(filepath.Join(scriptsDir, "dark-mode.js"), []byte(darkModeScript), 0644); err != nil {
+		t.Fatalf("failed to create dark-mode.js: %v", err)
+	}
+
+	gen := createGenerator(nil).WithScriptsDir(scriptsDir)
+	err := gen.Generate(contentDir, buildDir)
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	// Check dark-mode.js was copied
+	copiedScript, err := os.ReadFile(filepath.Join(buildDir, "scripts/dark-mode.js"))
+	if err != nil {
+		t.Fatalf("dark-mode.js should be copied: %v", err)
+	}
+
+	if !strings.Contains(string(copiedScript), "toggleTheme") {
+		t.Errorf("dark-mode.js should contain toggleTheme function")
 	}
 }
 

@@ -23,6 +23,7 @@ type Generator struct {
 	styleConfig *styling.Config
 	template    string
 	validators  *validator.Runner
+	scriptsDir  string
 }
 
 // New creates a new generator with the given substitution registry
@@ -50,6 +51,12 @@ func (g *Generator) WithValidator(v validator.Validator) *Generator {
 // WithTemplate sets a custom template
 func (g *Generator) WithTemplate(template string) *Generator {
 	g.template = template
+	return g
+}
+
+// WithScriptsDir sets a directory containing JavaScript files to copy
+func (g *Generator) WithScriptsDir(dir string) *Generator {
+	g.scriptsDir = dir
 	return g
 }
 
@@ -85,6 +92,13 @@ func (g *Generator) Generate(contentDir, buildDir string) error {
 
 	if err != nil {
 		return err
+	}
+
+	// Copy scripts if scriptsDir is set
+	if g.scriptsDir != "" {
+		if err := g.copyScripts(buildDir); err != nil {
+			return err
+		}
 	}
 
 	// Run validators on generated HTML files
@@ -194,4 +208,47 @@ func (g *Generator) copyAsset(path, relPath, buildDir string) error {
 
 	fmt.Printf("Copied: %s -> %s\n", path, outPath)
 	return nil
+}
+
+// copyScripts copies JavaScript files from scriptsDir to buildDir/scripts
+func (g *Generator) copyScripts(buildDir string) error {
+	scriptsOutDir := filepath.Join(buildDir, "scripts")
+
+	return filepath.Walk(g.scriptsDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip directories
+		if info.IsDir() {
+			return nil
+		}
+
+		// Only copy .js files
+		if !strings.HasSuffix(path, ".js") {
+			return nil
+		}
+
+		relPath, _ := filepath.Rel(g.scriptsDir, path)
+		outPath := filepath.Join(scriptsOutDir, relPath)
+
+		// Read source file
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("reading script %s: %w", path, err)
+		}
+
+		// Ensure output directory exists
+		if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+			return fmt.Errorf("creating directory for %s: %w", outPath, err)
+		}
+
+		// Write file
+		if err := os.WriteFile(outPath, data, 0644); err != nil {
+			return fmt.Errorf("writing script %s: %w", outPath, err)
+		}
+
+		fmt.Printf("Copied script: %s -> %s\n", path, outPath)
+		return nil
+	})
 }

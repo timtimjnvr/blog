@@ -11,7 +11,10 @@ import (
 	"github.com/timtimjnvr/blog/internal/validator"
 )
 
-const styleConfigPath = "styles.json"
+const (
+	styleConfigPath = "styles/styles.json"
+	scriptsDir      = "scripts"
+)
 
 func main() {
 	// Create registry and register substitutions
@@ -32,10 +35,16 @@ func main() {
 
 	// Generate site with validators
 	gen := generator.New(registry).
-		WithValidator(validator.NewImageValidator())
+		WithValidator(validator.NewImageValidator()).
+		WithValidator(validator.NewScriptValidator())
 
 	if styleConfig != nil {
 		gen = gen.WithStyleConfig(styleConfig)
+	}
+
+	// Add scripts directory if it exists
+	if _, err := os.Stat(scriptsDir); err == nil {
+		gen = gen.WithScriptsDir(scriptsDir)
 	}
 
 	if err := gen.Generate("content", "target/build"); err != nil {
