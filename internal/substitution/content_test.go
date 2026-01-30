@@ -23,20 +23,20 @@ func TestContentSubstituter_Resolve(t *testing.T) {
 		{
 			name:        "converts md link to html",
 			htmlContent: `<a href="posts/index.md">Articles</a>`,
-			relPath:     "home.md",
+			relPath:     "index.md",
 			expected:    `<a href="posts/index.html">Articles</a>`,
 		},
 		{
 			name:        "preserves content without md links",
 			htmlContent: `<p>Hello World</p>`,
-			relPath:     "home.md",
+			relPath:     "index.md",
 			expected:    `<p>Hello World</p>`,
 		},
 		{
 			name:        "handles posts directory link conversion",
 			htmlContent: `<a href="hello.md">Hello</a>`,
 			relPath:     "posts/index.md",
-			expected:    `<a href="../post/hello.html">Hello</a>`,
+			expected:    `<a href="hello.html">Hello</a>`,
 		},
 	}
 

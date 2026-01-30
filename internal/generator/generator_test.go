@@ -110,7 +110,7 @@ func TestGenerator_Generate_CreatesDirectories(t *testing.T) {
 	}
 
 	// Verify nested output directory was created
-	outputPath := filepath.Join(buildDir, "post", "article.html")
+	outputPath := filepath.Join(buildDir, "posts", "article.html")
 	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
 		t.Errorf("expected output file at %s", outputPath)
 	}
@@ -176,13 +176,13 @@ func TestGenerator_Generate_InvalidContentDir(t *testing.T) {
 	}
 }
 
-func TestGenerator_Generate_HomePageRouting(t *testing.T) {
+func TestGenerator_Generate_IndexPageRouting(t *testing.T) {
 	contentDir := t.TempDir()
 	buildDir := t.TempDir()
 
-	// home.md should become index.html
-	if err := os.WriteFile(filepath.Join(contentDir, "home.md"), []byte("# Home"), 0644); err != nil {
-		t.Fatalf("failed to create home.md: %v", err)
+	// index.md should become index.html
+	if err := os.WriteFile(filepath.Join(contentDir, "index.md"), []byte("# Home"), 0644); err != nil {
+		t.Fatalf("failed to create index.md: %v", err)
 	}
 
 	registry := substitution.NewRegistry[*context.PageContext]()
@@ -194,7 +194,7 @@ func TestGenerator_Generate_HomePageRouting(t *testing.T) {
 	}
 
 	if _, err := os.Stat(filepath.Join(buildDir, "index.html")); os.IsNotExist(err) {
-		t.Error("home.md should become index.html")
+		t.Error("index.md should become index.html")
 	}
 }
 
@@ -374,7 +374,7 @@ func TestGenerator_Integration_ContextSpecificStyling(t *testing.T) {
 	}
 
 	// Check post uses context-specific style
-	postContent, _ := os.ReadFile(filepath.Join(buildDir, "post", "article.html"))
+	postContent, _ := os.ReadFile(filepath.Join(buildDir, "posts", "article.html"))
 	if !strings.Contains(string(postContent), `class="post-heading-style"`) {
 		t.Errorf("Post should have post-specific style, got:\n%s", postContent)
 	}

@@ -47,9 +47,11 @@ blog/
 │   │   └── content.go           # {{content}} substitution
 │   └── validator/               # Post-generation validation
 ├── scripts/                     # JavaScript files
-├── content/                     # Markdown source files
-│   ├── home.md                  # Homepage (becomes index.html)
-│   ├── posts/                   # Blog posts
+├── content/
+│   ├── markdown/                # Markdown source files
+│   │   ├── index.md             # Homepage (becomes index.html)
+│   │   ├── about/               # About section
+│   │   └── posts/               # Blog posts
 │   └── assets/                  # Static assets (images, etc.)
 └── target/build/                # Generated output
 ```
@@ -59,7 +61,7 @@ blog/
 ### Generation Pipeline
 
 ```
-Markdown Files (content/)
+Markdown Files (content/markdown/)
     │
     ▼
 ┌─────────────────────────────────────────────────────────┐

@@ -3,7 +3,7 @@ version: "3"
 vars:
   BUILD_SITE_DIR: target/build
   BUILD_DIR: target
-  CONTENT_DIR: content
+  CONTENT_DIR: content/markdown
   GOLANGCI_LINT_VERSION: v2.8.0
   TAILWIND_VERSION: v4.0.6
 

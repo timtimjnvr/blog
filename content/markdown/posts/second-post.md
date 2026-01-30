@@ -1,4 +1,4 @@
-[Accueil](../home.md) | [Articles](index.md) | [Articles](../about/about.md)
+[Accueil](../index.md) | [Articles](index.md) | [À propos](../about/index.md)
 
 [← Retour aux articles](index.md)
 
@@ -12,7 +12,7 @@ Ceci est un deuxième article pour démontrer la liste d'articles.
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 
-![Image exemple](../assets/images/4482744.png)
+![Image exemple](../../assets/images/4482744.png)
 
 - Point 1
 - Point 2

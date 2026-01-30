@@ -8,18 +8,9 @@ import (
 )
 
 // ResolveOutputPath determines the output path for a given source path
+// Simply replaces .md extension with .html, preserving the directory structure
 func ResolveOutputPath(relPath string) string {
-	switch {
-	case relPath == "home.md":
-		return "index.html"
-	case relPath == "posts/index.md":
-		return "posts/index.html"
-	case strings.HasPrefix(relPath, "posts/"):
-		filename := strings.TrimPrefix(relPath, "posts/")
-		return "post/" + strings.TrimSuffix(filename, ".md") + ".html"
-	default:
-		return strings.TrimSuffix(relPath, ".md") + ".html"
-	}
+	return strings.TrimSuffix(relPath, ".md") + ".html"
 }
 
 // ConvertMdLinksToHtml converts .md links to .html in the generated HTML

@@ -48,7 +48,7 @@ func main() {
 		gen = gen.WithScriptsDir(scriptsDir)
 	}
 
-	if err := gen.Generate("content", "target/build"); err != nil {
+	if err := gen.Generate("content/markdown", "target/build"); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}

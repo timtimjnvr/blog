@@ -69,7 +69,7 @@ func setupTestContent(t *testing.T, files map[string]string) (contentDir, buildD
 
 func TestIntegration_BasicSiteGeneration(t *testing.T) {
 	contentDir, buildDir := setupTestContent(t, map[string]string{
-		"home.md": `# Welcome
+		"index.md": `# Welcome
 
 This is the homepage.
 
@@ -102,8 +102,8 @@ Content of the second post.
 	expectedFiles := []string{
 		"index.html",
 		"posts/index.html",
-		"post/first.html",
-		"post/second.html",
+		"posts/first.html",
+		"posts/second.html",
 	}
 
 	for _, file := range expectedFiles {
@@ -314,13 +314,13 @@ func TestIntegration_DarkModeScriptCopied(t *testing.T) {
 
 func TestIntegration_LinkConversion(t *testing.T) {
 	contentDir, buildDir := setupTestContent(t, map[string]string{
-		"home.md": `# Home
+		"index.md": `# Home
 
 [Go to posts](posts/index.md)
 `,
 		"posts/index.md": `# Posts
 
-[Back to home](../home.md)
+[Back to home](../index.md)
 [Read article](article.md)
 `,
 		"posts/article.md": `# Article
@@ -335,10 +335,10 @@ func TestIntegration_LinkConversion(t *testing.T) {
 		t.Fatalf("Generate() error = %v", err)
 	}
 
-	// Check home.md links
+	// Check index.md links
 	homeContent, _ := os.ReadFile(filepath.Join(buildDir, "index.html"))
 	if !strings.Contains(string(homeContent), `href="posts/index.html"`) {
-		t.Errorf("home should link to posts/index.html, got:\n%s", homeContent)
+		t.Errorf("index should link to posts/index.html, got:\n%s", homeContent)
 	}
 
 	// Check posts/index.md links
@@ -346,8 +346,8 @@ func TestIntegration_LinkConversion(t *testing.T) {
 	if !strings.Contains(string(postsContent), `href="../index.html"`) {
 		t.Errorf("posts/index should link to ../index.html, got:\n%s", postsContent)
 	}
-	if !strings.Contains(string(postsContent), `href="../post/article.html"`) {
-		t.Errorf("posts/index should link to ../post/article.html, got:\n%s", postsContent)
+	if !strings.Contains(string(postsContent), `href="article.html"`) {
+		t.Errorf("posts/index should link to article.html, got:\n%s", postsContent)
 	}
 }
 
@@ -474,7 +474,7 @@ func TestIntegration_ContextSpecificStyling(t *testing.T) {
 	}
 
 	// Post should have context-specific style
-	postContent, _ := os.ReadFile(filepath.Join(buildDir, "post/article.html"))
+	postContent, _ := os.ReadFile(filepath.Join(buildDir, "posts/article.html"))
 	if !strings.Contains(string(postContent), `class="post-style"`) {
 		t.Errorf("post should have post-style, got:\n%s", postContent)
 	}
