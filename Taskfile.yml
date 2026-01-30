@@ -5,7 +5,7 @@ vars:
   BUILD_DIR: target
   CONTENT_DIR: content
   GOLANGCI_LINT_VERSION: v2.8.0
-  TAILWIND_VERSION: v3.4.17
+  TAILWIND_VERSION: v4.0.6
 
 tasks:
   setup:
@@ -47,6 +47,9 @@ tasks:
           mv "$BINARY" ./{{.BUILD_DIR}}/bin/tailwindcss
           echo "Tailwind CLI installed to ./{{.BUILD_DIR}}/bin/tailwindcss"
         fi
+
+        # Install typography
+        npm install -g @tailwindcss/typography
 
   default:
     desc: Run all validation tasks
