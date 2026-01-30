@@ -36,7 +36,8 @@ func main() {
 	// Generate site with validators
 	gen := generator.New(registry).
 		WithValidator(validator.NewImageValidator()).
-		WithValidator(validator.NewScriptValidator())
+		WithValidator(validator.NewScriptValidator()).
+		WithValidator(validator.NewLinkValidator())
 
 	if styleConfig != nil {
 		gen = gen.WithStyleConfig(styleConfig)

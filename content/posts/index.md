@@ -1,4 +1,6 @@
-[Accueil](../home.md) | [Articles](index.md)
+[Accueil](../home.md) | [Articles](index.md) | [À propos](../about/about.md)
+
+[← Retour aux articles](index.md)
 
 ---
 

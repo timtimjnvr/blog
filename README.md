@@ -29,7 +29,6 @@ The generated site will be in the `target/build/` directory.
 ```
 blog/
 ├── main.go                      # Entry point
-├── tailwind.config.js           # Tailwind CSS configuration
 ├── styles/
 │   ├── input.css                # Tailwind CSS input file
 │   └── styles.json              # Optional custom styling configuration
@@ -80,12 +79,10 @@ HTML Files (target/build/)
 
 ### Styling System
 
-The generator uses [Tailwind CSS](https://tailwindcss.com/) with the [Typography plugin](https://tailwindcss.com/docs/typography-plugin) for automatic prose styling. 
-CSS is built using the [Tailwind Standalone CLI](https://tailwindcss.com/blog/standalone-cli).
+The generator uses [Tailwind CSS v4](https://tailwindcss.com/) with the [Typography plugin](https://tailwindcss.com/docs/typography-plugin) for automatic prose styling. 
+CSS is built using the Tailwind Standalone CLI. Configuration is done in `styles/input.css` using [CSS-based configuration](https://tailwindcss.com/docs/installation/tailwind-cli).
 
 * **Default behavior**: All Markdown content is wrapped in `<article class="prose prose-lg">`, which applies consistent typography styles to headings, paragraphs, links, code blocks, etc.
-
-  * Tailwind configuration: Customize the typography styles in `tailwind.config.js`. See the [Typography plugin documentation](https://tailwindcss.com/docs/typography-plugin) for all available options.
 
 * **Custom styling**: Create a `styles/styles.json` file to add CSS classes to specific elements:
 

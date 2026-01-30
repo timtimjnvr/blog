@@ -1,10 +1,10 @@
-[Accueil](home.md) | [Articles](posts/index.md)
+[Accueil](home.md) | [Articles](posts/index.md) | [À propos](about/about.md)
 
 ---
 
 # Bienvenue sur mon blog
 
-Ceci est mon site personnel où je partage mes réflexions et articles
+Ceci est mon site personnel où je partage mes réflexions et articles.
 
 ## À propos
 

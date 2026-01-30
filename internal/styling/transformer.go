@@ -27,7 +27,8 @@ func NewTransformer(config *Config, context string) *Transformer {
 
 // Transform implements parser.ASTTransformer.
 func (t *Transformer) Transform(doc *ast.Document, reader text.Reader, pc parser.Context) {
-	ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+	// func does not return error
+	_ = ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
 			return ast.WalkContinue, nil
 		}
