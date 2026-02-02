@@ -17,8 +17,8 @@ import (
 //go:embed page.html
 var defaultTemplate string
 
-// Generator handles site generation
-type Generator struct {
+// LegacyGenerator handles site generation
+type LegacyGenerator struct {
 	registry    *substitution.Registry[*context.PageContext]
 	styleConfig *styling.Config
 	template    string
@@ -28,8 +28,8 @@ type Generator struct {
 }
 
 // New creates a new generator with the given substitution registry
-func New(registry *substitution.Registry[*context.PageContext]) *Generator {
-	return &Generator{
+func New(registry *substitution.Registry[*context.PageContext]) *LegacyGenerator {
+	return &LegacyGenerator{
 		registry:    registry,
 		styleConfig: nil,
 		template:    defaultTemplate,
@@ -38,37 +38,37 @@ func New(registry *substitution.Registry[*context.PageContext]) *Generator {
 }
 
 // WithStyleConfig sets a style configuration for CSS class injection
-func (g *Generator) WithStyleConfig(config *styling.Config) *Generator {
+func (g *LegacyGenerator) WithStyleConfig(config *styling.Config) *LegacyGenerator {
 	g.styleConfig = config
 	return g
 }
 
 // WithValidator adds a validator to the generator
-func (g *Generator) WithValidator(v validator.Validator) *Generator {
+func (g *LegacyGenerator) WithValidator(v validator.Validator) *LegacyGenerator {
 	g.validators.Register(v)
 	return g
 }
 
 // WithTemplate sets a custom template
-func (g *Generator) WithTemplate(template string) *Generator {
+func (g *LegacyGenerator) WithTemplate(template string) *LegacyGenerator {
 	g.template = template
 	return g
 }
 
 // WithScriptsDir sets a directory containing JavaScript files to copy
-func (g *Generator) WithScriptsDir(dir string) *Generator {
+func (g *LegacyGenerator) WithScriptsDir(dir string) *LegacyGenerator {
 	g.scriptsDir = dir
 	return g
 }
 
 // WithAssetsDir sets a directory containing static assets to copy
-func (g *Generator) WithAssetsDir(dir string) *Generator {
+func (g *LegacyGenerator) WithAssetsDir(dir string) *LegacyGenerator {
 	g.assetsDir = dir
 	return g
 }
 
 // Generate processes all markdown files from contentDir and outputs to buildDir
-func (g *Generator) Generate(contentDir, buildDir string) error {
+func (g *LegacyGenerator) Generate(contentDir, buildDir string) error {
 	var generatedFiles []string
 
 	err := filepath.Walk(contentDir, func(path string, info os.FileInfo, err error) error {
@@ -120,7 +120,7 @@ func (g *Generator) Generate(contentDir, buildDir string) error {
 }
 
 // validate runs all validators on the generated HTML files
-func (g *Generator) validate(htmlFiles []string, buildDir string) error {
+func (g *LegacyGenerator) validate(htmlFiles []string, buildDir string) error {
 	allResults := &validator.ValidationResult{}
 
 	for _, htmlPath := range htmlFiles {
@@ -145,7 +145,7 @@ func (g *Generator) validate(htmlFiles []string, buildDir string) error {
 }
 
 // processMarkdown converts a markdown file to HTML
-func (g *Generator) processMarkdown(path, relPath, buildDir string) error {
+func (g *LegacyGenerator) processMarkdown(path, relPath, buildDir string) error {
 	// Read markdown file
 	source, err := os.ReadFile(path)
 	if err != nil {
@@ -193,7 +193,7 @@ func (g *Generator) processMarkdown(path, relPath, buildDir string) error {
 
 // deriveContext determines the styling context from the file path.
 // For example, files in "posts/" get context "post".
-func (g *Generator) deriveContext(relPath string) string {
+func (g *LegacyGenerator) deriveContext(relPath string) string {
 	if strings.HasPrefix(relPath, "posts/") {
 		return "post"
 	}
@@ -201,7 +201,7 @@ func (g *Generator) deriveContext(relPath string) string {
 }
 
 // copyAsset copies a static file to the build directory
-func (g *Generator) copyAsset(path, relPath, buildDir string) error {
+func (g *LegacyGenerator) copyAsset(path, relPath, buildDir string) error {
 	outPath := filepath.Join(buildDir, relPath)
 
 	// Read source file
@@ -225,7 +225,7 @@ func (g *Generator) copyAsset(path, relPath, buildDir string) error {
 }
 
 // copyScripts copies JavaScript files from scriptsDir to buildDir/scripts
-func (g *Generator) copyScripts(buildDir string) error {
+func (g *LegacyGenerator) copyScripts(buildDir string) error {
 	scriptsOutDir := filepath.Join(buildDir, "scripts")
 
 	return filepath.Walk(g.scriptsDir, func(path string, info os.FileInfo, err error) error {
@@ -268,7 +268,7 @@ func (g *Generator) copyScripts(buildDir string) error {
 }
 
 // copyAssets copies static assets from assetsDir to buildDir/assets
-func (g *Generator) copyAssets(buildDir string) error {
+func (g *LegacyGenerator) copyAssets(buildDir string) error {
 	// Assets are referenced from markdown relative to content/markdown/,
 	// so strip "content/" prefix to get correct output path
 	assetsOutputDir := strings.TrimPrefix(g.assetsDir, "content/")

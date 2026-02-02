@@ -15,7 +15,7 @@ import (
 
 // Helper to create a generator with standard configuration
 // Uses a simple template without script references for most tests
-func createGenerator(styleConfig *styling.Config) *generator.Generator {
+func createGenerator(styleConfig *styling.Config) *generator.LegacyGenerator {
 	registry := substitution.NewRegistry[*context.PageContext]()
 	registry.Register(&substitution.TitleSubstituter{})
 	registry.Register(&substitution.ContentSubstituter{})
