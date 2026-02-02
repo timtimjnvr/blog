@@ -7,6 +7,64 @@ import (
 	"strings"
 )
 
+// ConvertAssetPaths adjusts relative asset paths (images) for the output structure.
+// Since markdown files are in content/markdown/ but output structure flattens this,
+// relative paths that go outside content/markdown/ need adjustment.
+// sourceRelPath is the relative path from content/markdown/ (e.g., "posts/second-post.md")
+func ConvertAssetPaths(html string, sourceRelPath string) string {
+	sourceDir := filepath.Dir(sourceRelPath)
+	sourceOutputDir := filepath.Dir(ResolveOutputPath(sourceRelPath))
+
+	// Match img src attributes with relative paths
+	re := regexp.MustCompile(`(<img[^>]+src=")([^"]+)(")`)
+	return re.ReplaceAllStringFunc(html, func(match string) string {
+		submatch := re.FindStringSubmatch(match)
+		if len(submatch) < 4 {
+			return match
+		}
+
+		prefix := submatch[1]
+		src := submatch[2]
+		suffix := submatch[3]
+
+		// Skip external URLs and absolute paths
+		if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") || strings.HasPrefix(src, "/") {
+			return match
+		}
+
+		// Count how many levels up the path goes
+		upCount := 0
+		remaining := src
+		for strings.HasPrefix(remaining, "../") {
+			upCount++
+			remaining = strings.TrimPrefix(remaining, "../")
+		}
+
+		if upCount == 0 {
+			return match
+		}
+
+		// Calculate the target directory from source perspective
+		targetDir := sourceDir
+		for i := 0; i < upCount; i++ {
+			targetDir = filepath.Dir(targetDir)
+		}
+		targetPath := filepath.Join(targetDir, remaining)
+		targetPath = filepath.Clean(targetPath)
+
+		// Remove "content/" prefix if present since assets are copied without it
+		targetPath = strings.TrimPrefix(targetPath, "content/")
+		if after, ok := strings.CutPrefix(targetPath, "../"); ok {
+			targetPath = after
+		}
+
+		// Calculate relative path from output directory
+		relPath, _ := filepath.Rel(sourceOutputDir, targetPath)
+
+		return prefix + relPath + suffix
+	})
+}
+
 // ResolveOutputPath determines the output path for a given source path
 // Simply replaces .md extension with .html, preserving the directory structure
 func ResolveOutputPath(relPath string) string {

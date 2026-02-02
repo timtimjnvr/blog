@@ -24,6 +24,7 @@ type Generator struct {
 	template    string
 	validators  *validator.Runner
 	scriptsDir  string
+	assetsDir   string
 }
 
 // New creates a new generator with the given substitution registry
@@ -57,6 +58,12 @@ func (g *Generator) WithTemplate(template string) *Generator {
 // WithScriptsDir sets a directory containing JavaScript files to copy
 func (g *Generator) WithScriptsDir(dir string) *Generator {
 	g.scriptsDir = dir
+	return g
+}
+
+// WithAssetsDir sets a directory containing static assets to copy
+func (g *Generator) WithAssetsDir(dir string) *Generator {
+	g.assetsDir = dir
 	return g
 }
 
@@ -97,6 +104,13 @@ func (g *Generator) Generate(contentDir, buildDir string) error {
 	// Copy scripts if scriptsDir is set
 	if g.scriptsDir != "" {
 		if err := g.copyScripts(buildDir); err != nil {
+			return err
+		}
+	}
+
+	// Copy assets if assetsDir is set
+	if g.assetsDir != "" {
+		if err := g.copyAssets(buildDir); err != nil {
 			return err
 		}
 	}
@@ -249,6 +263,47 @@ func (g *Generator) copyScripts(buildDir string) error {
 		}
 
 		fmt.Printf("Copied script: %s -> %s\n", path, outPath)
+		return nil
+	})
+}
+
+// copyAssets copies static assets from assetsDir to buildDir/assets
+func (g *Generator) copyAssets(buildDir string) error {
+	// Assets are referenced from markdown relative to content/markdown/,
+	// so strip "content/" prefix to get correct output path
+	assetsOutputDir := strings.TrimPrefix(g.assetsDir, "content/")
+	assetsOutDir := filepath.Join(buildDir, assetsOutputDir)
+
+	return filepath.Walk(g.assetsDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip directories
+		if info.IsDir() {
+			return nil
+		}
+
+		relPath, _ := filepath.Rel(g.assetsDir, path)
+		outPath := filepath.Join(assetsOutDir, relPath)
+
+		// Read source file
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("reading asset %s: %w", path, err)
+		}
+
+		// Ensure output directory exists
+		if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+			return fmt.Errorf("creating directory for %s: %w", outPath, err)
+		}
+
+		// Write file
+		if err := os.WriteFile(outPath, data, 0644); err != nil {
+			return fmt.Errorf("writing asset %s: %w", outPath, err)
+		}
+
+		fmt.Printf("Copied asset: %s -> %s\n", path, outPath)
 		return nil
 	})
 }

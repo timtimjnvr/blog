@@ -13,5 +13,7 @@ func (c *ContentSubstituter) Placeholder() string {
 }
 
 func (c *ContentSubstituter) Resolve(ctx *context.PageContext) string {
-	return markdown.ConvertMdLinksToHtml(ctx.GetHTMLContent(), ctx.GetRelPath())
+	html := markdown.ConvertMdLinksToHtml(ctx.GetHTMLContent(), ctx.GetRelPath())
+	html = markdown.ConvertAssetPaths(html, ctx.GetRelPath())
+	return html
 }

@@ -14,6 +14,7 @@ import (
 const (
 	styleConfigPath = "styles/styles.json"
 	scriptsDir      = "scripts"
+	assetsDir       = "content/assets"
 )
 
 func main() {
@@ -46,6 +47,11 @@ func main() {
 	// Add scripts directory if it exists
 	if _, err := os.Stat(scriptsDir); err == nil {
 		gen = gen.WithScriptsDir(scriptsDir)
+	}
+
+	// Add assets directory if it exists
+	if _, err := os.Stat(assetsDir); err == nil {
+		gen = gen.WithAssetsDir(assetsDir)
 	}
 
 	if err := gen.Generate("content/markdown", "target/build"); err != nil {
