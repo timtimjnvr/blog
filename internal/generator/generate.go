@@ -1,4 +1,5 @@
 package generator
 
-type GeneratorInterface interface {
+type Generator interface {
+	Generate() error
 }

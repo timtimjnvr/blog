@@ -93,8 +93,7 @@ func (g *LegacyGenerator) Generate(contentDir, buildDir string) error {
 			return nil
 		}
 
-		// Copy static assets (images, etc.)
-		return g.copyAsset(path, relPath, buildDir)
+		return nil
 	})
 
 	if err != nil {
