@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/timtimjnvr/blog/internal/generator/page"
+	"github.com/timtimjnvr/blog/internal/generator/page/styling"
 )
 
 type (
@@ -16,20 +17,22 @@ type (
 		Validate() error
 	}
 
-	pageGeneratorFactory func(markdownPath, buildDir string) PageGenerator
+	pageGeneratorFactory func(markdownPath, buildDir, section string, stylingConfig *styling.Config) PageGenerator
 )
 
 type Generator struct {
 	contentDir                string
 	assetsDir                 string
 	assetsOutDir              string
+	optionalStylingConfigPath string
 	buildDir                  string
 	scriptsDir                string
 	scriptsOutDir             string
-	optionalStylingConfigPath string
 	pageGeneratorFactory      pageGeneratorFactory
 	sectionDirectoryNames     []string
 	pagesGenerators           []PageGenerator
+
+	stylingConfig *styling.Config
 }
 
 func NewGenerator() *Generator {
@@ -37,18 +40,22 @@ func NewGenerator() *Generator {
 		contentDir:                "content/markdown",
 		assetsDir:                 "content/assets",
 		assetsOutDir:              "assets",
+		optionalStylingConfigPath: "styles/styles.json",
 		buildDir:                  "target/build",
 		scriptsDir:                "scripts",
 		scriptsOutDir:             "scripts",
-		optionalStylingConfigPath: "styles/styles.json",
 		sectionDirectoryNames:     make([]string, 0),
 		pagesGenerators:           make([]PageGenerator, 0),
 		pageGeneratorFactory:      defaultPageGeneratorFactory,
 	}
 }
 
-func defaultPageGeneratorFactory(markdownPath, buildDir string) PageGenerator {
-	return page.NewGenerator(markdownPath, buildDir)
+func defaultPageGeneratorFactory(markdownPath, buildDir, section string, stylingConfig *styling.Config) PageGenerator {
+	var config styling.Config
+	if stylingConfig != nil {
+		config = *stylingConfig
+	}
+	return page.NewGenerator(markdownPath, buildDir, section, config)
 }
 
 // WithPageGeneratorFactory sets a custom page generator factory.
@@ -57,7 +64,41 @@ func (g *Generator) WithPageGeneratorFactory(factory pageGeneratorFactory) *Gene
 	return g
 }
 
+// WithContentDir sets the content directory.
+func (g *Generator) WithContentDir(dir string) *Generator {
+	g.contentDir = dir
+	return g
+}
+
+// WithBuildDir sets the build output directory.
+func (g *Generator) WithBuildDir(dir string) *Generator {
+	g.buildDir = dir
+	return g
+}
+
+// WithAssetsDir sets the assets directory.
+func (g *Generator) WithAssetsDir(dir string) *Generator {
+	g.assetsDir = dir
+	return g
+}
+
+// WithScriptsDir sets the scripts directory.
+func (g *Generator) WithScriptsDir(dir string) *Generator {
+	g.scriptsDir = dir
+	return g
+}
+
+// WithStylingConfigPath sets the styling configuration file path.
+func (g *Generator) WithStylingConfigPath(path string) *Generator {
+	g.optionalStylingConfigPath = path
+	return g
+}
+
 func (g *Generator) Generate() error {
+	if err := g.loadStylingConfig(); err != nil {
+		return fmt.Errorf("failed to load styling configuration: %v", err)
+	}
+
 	if err := g.makeAllDirectories(); err != nil {
 		return fmt.Errorf("failed to create output directories: %v", err)
 	}
@@ -84,6 +125,17 @@ func (g *Generator) Generate() error {
 	return nil
 }
 
+func (g *Generator) loadStylingConfig() error {
+	if _, err := os.Stat(g.optionalStylingConfigPath); err == nil {
+		styleConfig, err := styling.LoadConfig(g.optionalStylingConfigPath)
+		if err != nil {
+			return fmt.Errorf("failed to LoadConfig: %v", err)
+		}
+		fmt.Printf("Loaded style configuration from %s\n", g.optionalStylingConfigPath)
+		g.stylingConfig = styleConfig
+	}
+	return nil
+}
 func (g *Generator) listSections() error {
 	return filepath.Walk(g.contentDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -133,7 +185,7 @@ func (g *Generator) copyScripts() error {
 
 func (g *Generator) generatePages() error {
 	errs := make([]error, 0)
-	err := filepath.Walk(g.contentDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(g.contentDir, func(pageFilePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -144,12 +196,19 @@ func (g *Generator) generatePages() error {
 		}
 
 		// Only Handling markdown files
-		if !strings.HasSuffix(path, ".md") {
-			errs = append(errs, fmt.Errorf("wrong extension for file in %s", path))
+		if !strings.HasSuffix(pageFilePath, ".md") {
+			errs = append(errs, fmt.Errorf("wrong extension for file in %s", pageFilePath))
 			return nil
 		}
 
-		g.pagesGenerators = append(g.pagesGenerators, g.pageGeneratorFactory(path, g.buildDir))
+		// Page section is the directory between content dir and file name
+		pageSection, err := extractSection(g.contentDir, pageFilePath)
+		if err != nil {
+			errs = append(errs, err)
+			return nil
+		}
+
+		g.pagesGenerators = append(g.pagesGenerators, g.pageGeneratorFactory(pageFilePath, g.buildDir, pageSection, g.stylingConfig))
 		return nil
 	})
 
@@ -164,10 +223,27 @@ func (g *Generator) generatePages() error {
 	}
 
 	if len(errs) != 0 {
+		// Empty the page generators
+		g.pagesGenerators = make([]PageGenerator, 0)
 		return errors.Join(errs...)
 	}
 
 	return nil
+}
+
+// extractSection returns the section (subdirectory path) for a file relative to the content directory.
+// For example, if contentDir is "content/markdown" and filePath is "content/markdown/blog/post.md",
+// the section returned is "blog". Returns empty string if the file is at the root of contentDir.
+func extractSection(contentDir, filePath string) (string, error) {
+	relPath, err := filepath.Rel(contentDir, filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to get relative path for %s: %w", filePath, err)
+	}
+	section := filepath.Dir(relPath)
+	if section == "." {
+		return "", nil
+	}
+	return section, nil
 }
 
 func (g *Generator) Validate() error {

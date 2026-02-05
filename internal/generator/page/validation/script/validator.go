@@ -1,4 +1,4 @@
-package validator
+package script
 
 import (
 	"fmt"
@@ -10,17 +10,17 @@ import (
 	jsparser "github.com/dop251/goja/parser"
 )
 
-// ScriptValidator checks that all scripts in HTML are accessible
-type ScriptValidator struct{}
+// Validator checks that all scripts in HTML are accessible
+type Validator struct{}
 
-// NewScriptValidator creates a new script validator
-func NewScriptValidator() *ScriptValidator {
-	return &ScriptValidator{}
+// NewValidator creates a new script validator
+func NewValidator() *Validator {
+	return &Validator{}
 }
 
 // Validate checks all script src attributes in the HTML content
-func (v *ScriptValidator) Validate(htmlPath, buildDir string, content []byte) []ValidationError {
-	var errors []ValidationError
+func (v *Validator) Validate(htmlPath, buildDir string, content []byte) []error {
+	var errs []error
 
 	// Find all script src attributes
 	scriptRegex := regexp.MustCompile(`<script[^>]+src="([^"]+)"`)
@@ -41,24 +41,26 @@ func (v *ScriptValidator) Validate(htmlPath, buildDir string, content []byte) []
 		scriptPath := v.resolveScriptPath(src, htmlPath, buildDir)
 
 		if _, err := os.Stat(scriptPath); os.IsNotExist(err) {
-			errors = append(errors, ValidationError{
-				File:    htmlPath,
-				Message: fmt.Sprintf("local script not found: %s", src),
-			})
+			errs = append(errs, fmt.Errorf("%s: local script not found: %s", htmlPath, src))
 			continue
 		}
 
 		// Validate JavaScript syntax
 		if syntaxErrs := v.validateJSSyntax(scriptPath); len(syntaxErrs) > 0 {
-			errors = append(errors, syntaxErrs...)
+			errs = append(errs, syntaxErrs...)
 		}
 	}
 
-	return errors
+	return errs
+}
+
+// isExternalURL checks if the URL is external (http/https)
+func isExternalURL(src string) bool {
+	return strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://")
 }
 
 // resolveScriptPath resolves a script src to an absolute file path
-func (v *ScriptValidator) resolveScriptPath(src, htmlPath, buildDir string) string {
+func (v *Validator) resolveScriptPath(src, htmlPath, buildDir string) string {
 	var scriptPath string
 
 	if strings.HasPrefix(src, "/") {
@@ -75,21 +77,15 @@ func (v *ScriptValidator) resolveScriptPath(src, htmlPath, buildDir string) stri
 }
 
 // validateJSSyntax parses the JavaScript file and returns any syntax errors
-func (v *ScriptValidator) validateJSSyntax(scriptPath string) []ValidationError {
+func (v *Validator) validateJSSyntax(scriptPath string) []error {
 	content, err := os.ReadFile(scriptPath)
 	if err != nil {
-		return []ValidationError{{
-			File:    scriptPath,
-			Message: fmt.Sprintf("failed to read script: %v", err),
-		}}
+		return []error{fmt.Errorf("%s: failed to read script: %v", scriptPath, err)}
 	}
 
 	_, parseErr := jsparser.ParseFile(nil, scriptPath, string(content), 0)
 	if parseErr != nil {
-		return []ValidationError{{
-			File:    scriptPath,
-			Message: fmt.Sprintf("JavaScript syntax error: %v", parseErr),
-		}}
+		return []error{fmt.Errorf("%s: JavaScript syntax error: %v", scriptPath, parseErr)}
 	}
 
 	return nil

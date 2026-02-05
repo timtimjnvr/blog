@@ -16,6 +16,12 @@ type Transformer struct {
 // NewTransformer creates a new Transformer with the given config.
 // The context parameter is optional and allows context-specific styling (e.g., "post").
 func NewTransformer(config *Config, context string) *Transformer {
+	if config == nil {
+		config = &Config{
+			Elements: make(map[string]string),
+			Contexts: make(map[string]map[string]string),
+		}
+	}
 	return &Transformer{
 		config:  config,
 		context: context,

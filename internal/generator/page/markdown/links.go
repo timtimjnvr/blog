@@ -73,12 +73,27 @@ func ResolveOutputPath(relPath string) string {
 
 // ConvertMdLinksToHtml converts .md links to .html in the generated HTML
 // sourceRelPath is the relative path of the source file (e.g., "posts/index.md")
+// If sourceRelPath is empty, simply replaces .md with .html in all links
 func ConvertMdLinksToHtml(html string, sourceRelPath string) string {
+	re := regexp.MustCompile(`href="([^"]*\.md)"`)
+
+	// Simple mode: just replace .md with .html when no source path context
+	if sourceRelPath == "" {
+		return re.ReplaceAllStringFunc(html, func(match string) string {
+			submatch := re.FindStringSubmatch(match)
+			if len(submatch) < 2 {
+				return match
+			}
+			linkPath := submatch[1]
+			htmlPath := strings.TrimSuffix(linkPath, ".md") + ".html"
+			return fmt.Sprintf(`href="%s"`, htmlPath)
+		})
+	}
+
 	sourceDir := filepath.Dir(sourceRelPath)
 	sourceOutputPath := ResolveOutputPath(sourceRelPath)
 	sourceOutputDir := filepath.Dir(sourceOutputPath)
 
-	re := regexp.MustCompile(`href="([^"]*\.md)"`)
 	return re.ReplaceAllStringFunc(html, func(match string) string {
 		submatch := re.FindStringSubmatch(match)
 		if len(submatch) < 2 {

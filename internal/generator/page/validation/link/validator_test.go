@@ -1,4 +1,4 @@
-package validator
+package link
 
 import (
 	"net/http"
@@ -9,10 +9,10 @@ import (
 	"time"
 )
 
-func TestNewLinkValidator(t *testing.T) {
-	v := NewLinkValidator()
+func TestNewValidator(t *testing.T) {
+	v := NewValidator()
 	if v == nil {
-		t.Fatal("NewLinkValidator returned nil")
+		t.Fatal("NewValidator returned nil")
 	}
 	if v.Timeout != 10*time.Second {
 		t.Errorf("expected timeout 10s, got %v", v.Timeout)
@@ -22,7 +22,7 @@ func TestNewLinkValidator(t *testing.T) {
 	}
 }
 
-func TestLinkValidator_ValidateLocalLink(t *testing.T) {
+func TestValidator_ValidateLocalLink(t *testing.T) {
 	// Create temp directory structure
 	buildDir := t.TempDir()
 	pagesDir := filepath.Join(buildDir, "pages")
@@ -120,7 +120,7 @@ func TestLinkValidator_ValidateLocalLink(t *testing.T) {
 		},
 	}
 
-	v := NewLinkValidator()
+	v := NewValidator()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -133,7 +133,7 @@ func TestLinkValidator_ValidateLocalLink(t *testing.T) {
 	}
 }
 
-func TestLinkValidator_ValidateExternalLink(t *testing.T) {
+func TestValidator_ValidateExternalLink(t *testing.T) {
 	// Create a test HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/valid" {
@@ -164,7 +164,7 @@ func TestLinkValidator_ValidateExternalLink(t *testing.T) {
 		},
 	}
 
-	v := NewLinkValidator()
+	v := NewValidator()
 	v.Timeout = 5 * time.Second
 
 	for _, tt := range tests {
@@ -178,14 +178,14 @@ func TestLinkValidator_ValidateExternalLink(t *testing.T) {
 	}
 }
 
-func TestLinkValidator_SkipExternal(t *testing.T) {
+func TestValidator_SkipExternal(t *testing.T) {
 	buildDir := t.TempDir()
 	htmlPath := filepath.Join(buildDir, "test.html")
 
 	// This URL would fail if actually checked
 	html := `<a href="http://invalid.invalid/page">Invalid</a>`
 
-	v := NewLinkValidator()
+	v := NewValidator()
 	v.SkipExternal = true
 
 	errs := v.Validate(htmlPath, buildDir, []byte(html))
@@ -194,13 +194,13 @@ func TestLinkValidator_SkipExternal(t *testing.T) {
 	}
 }
 
-func TestLinkValidator_SkipsJavascriptLinks(t *testing.T) {
+func TestValidator_SkipsJavascriptLinks(t *testing.T) {
 	buildDir := t.TempDir()
 	htmlPath := filepath.Join(buildDir, "test.html")
 
 	html := `<a href="javascript:void(0)">Click</a>`
 
-	v := NewLinkValidator()
+	v := NewValidator()
 
 	errs := v.Validate(htmlPath, buildDir, []byte(html))
 	if len(errs) > 0 {

@@ -1,4 +1,4 @@
-package validator
+package link
 
 import (
 	"fmt"
@@ -10,25 +10,25 @@ import (
 	"time"
 )
 
-// LinkValidator checks that all links in HTML are accessible
-type LinkValidator struct {
+// Validator checks that all links in HTML are accessible
+type Validator struct {
 	// Timeout for HTTP requests to external links
 	Timeout time.Duration
 	// SkipExternal skips validation of external URLs
 	SkipExternal bool
 }
 
-// NewLinkValidator creates a new link validator with default settings
-func NewLinkValidator() *LinkValidator {
-	return &LinkValidator{
+// NewValidator creates a new link validator with default settings
+func NewValidator() *Validator {
+	return &Validator{
 		Timeout:      10 * time.Second,
 		SkipExternal: false,
 	}
 }
 
 // Validate checks all anchor href attributes in the HTML content
-func (v *LinkValidator) Validate(htmlPath, buildDir string, content []byte) []ValidationError {
-	var errors []ValidationError
+func (v *Validator) Validate(htmlPath, buildDir string, content []byte) []error {
+	var errs []error
 
 	// Find all anchor href attributes
 	linkRegex := regexp.MustCompile(`<a[^>]+href="([^"]+)"`)
@@ -61,26 +61,25 @@ func (v *LinkValidator) Validate(htmlPath, buildDir string, content []byte) []Va
 				continue
 			}
 			if err := v.validateExternalLink(href); err != nil {
-				errors = append(errors, ValidationError{
-					File:    htmlPath,
-					Message: fmt.Sprintf("external link not accessible: %s (%v)", href, err),
-				})
+				errs = append(errs, fmt.Errorf("%s: external link not accessible: %s (%v)", htmlPath, href, err))
 			}
 		} else {
 			if err := v.validateLocalLink(href, htmlPath, buildDir); err != nil {
-				errors = append(errors, ValidationError{
-					File:    htmlPath,
-					Message: fmt.Sprintf("local link not found: %s", href),
-				})
+				errs = append(errs, fmt.Errorf("%s: local link not found: %s", htmlPath, href))
 			}
 		}
 	}
 
-	return errors
+	return errs
+}
+
+// isExternalURL checks if the URL is external (http/https)
+func isExternalURL(src string) bool {
+	return strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://")
 }
 
 // validateExternalLink checks if an external URL is accessible
-func (v *LinkValidator) validateExternalLink(url string) error {
+func (v *Validator) validateExternalLink(url string) error {
 	client := &http.Client{
 		Timeout: v.Timeout,
 	}
@@ -99,7 +98,7 @@ func (v *LinkValidator) validateExternalLink(url string) error {
 }
 
 // validateLocalLink checks if a local link target exists
-func (v *LinkValidator) validateLocalLink(href, htmlPath, buildDir string) error {
+func (v *Validator) validateLocalLink(href, htmlPath, buildDir string) error {
 	// Remove fragment identifier if present
 	href = strings.Split(href, "#")[0]
 

@@ -1,4 +1,4 @@
-package validator
+package image
 
 import (
 	"net/http"
@@ -9,10 +9,10 @@ import (
 	"time"
 )
 
-func TestNewImageValidator(t *testing.T) {
-	v := NewImageValidator()
+func TestNewValidator(t *testing.T) {
+	v := NewValidator()
 	if v == nil {
-		t.Fatal("NewImageValidator returned nil")
+		t.Fatal("NewValidator returned nil")
 	}
 	if v.Timeout != 10*time.Second {
 		t.Errorf("expected timeout 10s, got %v", v.Timeout)
@@ -22,7 +22,7 @@ func TestNewImageValidator(t *testing.T) {
 	}
 }
 
-func TestImageValidator_ValidateLocalImage(t *testing.T) {
+func TestValidator_ValidateLocalImage(t *testing.T) {
 	// Create temp directory structure
 	buildDir := t.TempDir()
 	imgDir := filepath.Join(buildDir, "assets", "images")
@@ -80,7 +80,7 @@ func TestImageValidator_ValidateLocalImage(t *testing.T) {
 		},
 	}
 
-	v := NewImageValidator()
+	v := NewValidator()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -93,7 +93,7 @@ func TestImageValidator_ValidateLocalImage(t *testing.T) {
 	}
 }
 
-func TestImageValidator_ValidateExternalImage(t *testing.T) {
+func TestValidator_ValidateExternalImage(t *testing.T) {
 	// Create a test HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/valid.png" {
@@ -124,7 +124,7 @@ func TestImageValidator_ValidateExternalImage(t *testing.T) {
 		},
 	}
 
-	v := NewImageValidator()
+	v := NewValidator()
 	v.Timeout = 5 * time.Second
 
 	for _, tt := range tests {
@@ -138,14 +138,14 @@ func TestImageValidator_ValidateExternalImage(t *testing.T) {
 	}
 }
 
-func TestImageValidator_SkipExternal(t *testing.T) {
+func TestValidator_SkipExternal(t *testing.T) {
 	buildDir := t.TempDir()
 	htmlPath := filepath.Join(buildDir, "test.html")
 
 	// This URL would fail if actually checked
 	html := `<img src="http://invalid.invalid/image.png" alt="Invalid">`
 
-	v := NewImageValidator()
+	v := NewValidator()
 	v.SkipExternal = true
 
 	errs := v.Validate(htmlPath, buildDir, []byte(html))

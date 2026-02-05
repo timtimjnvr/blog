@@ -3,7 +3,7 @@ package markdown
 import (
 	"bytes"
 
-	"github.com/timtimjnvr/blog/internal/styling"
+	"github.com/timtimjnvr/blog/internal/generator/page/styling"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"

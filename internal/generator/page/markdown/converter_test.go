@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/timtimjnvr/blog/internal/styling"
+	"github.com/timtimjnvr/blog/internal/generator/page/styling"
 )
 
 func TestNewConverter(t *testing.T) {

@@ -1,4 +1,4 @@
-package validator
+package image
 
 import (
 	"fmt"
@@ -10,25 +10,25 @@ import (
 	"time"
 )
 
-// ImageValidator checks that all images in HTML are accessible
-type ImageValidator struct {
+// Validator checks that all images in HTML are accessible
+type Validator struct {
 	// Timeout for HTTP requests to external images
 	Timeout time.Duration
 	// SkipExternal skips validation of external URLs
 	SkipExternal bool
 }
 
-// NewImageValidator creates a new image validator with default settings
-func NewImageValidator() *ImageValidator {
-	return &ImageValidator{
+// NewValidator creates a new image validator with default settings
+func NewValidator() *Validator {
+	return &Validator{
 		Timeout:      10 * time.Second,
 		SkipExternal: false,
 	}
 }
 
 // Validate checks all img src attributes in the HTML content
-func (v *ImageValidator) Validate(htmlPath, buildDir string, content []byte) []ValidationError {
-	var errors []ValidationError
+func (v *Validator) Validate(htmlPath, buildDir string, content []byte) []error {
+	var errs []error
 
 	// Find all img src attributes
 	imgRegex := regexp.MustCompile(`<img[^>]+src="([^"]+)"`)
@@ -46,22 +46,16 @@ func (v *ImageValidator) Validate(htmlPath, buildDir string, content []byte) []V
 				continue
 			}
 			if err := v.validateExternalImage(src); err != nil {
-				errors = append(errors, ValidationError{
-					File:    htmlPath,
-					Message: fmt.Sprintf("external image not accessible: %s (%v)", src, err),
-				})
+				errs = append(errs, fmt.Errorf("%s: external image not accessible: %s (%v)", htmlPath, src, err))
 			}
 		} else {
 			if err := v.validateLocalImage(src, htmlPath, buildDir); err != nil {
-				errors = append(errors, ValidationError{
-					File:    htmlPath,
-					Message: fmt.Sprintf("local image not found: %s", src),
-				})
+				errs = append(errs, fmt.Errorf("%s: local image not found: %s", htmlPath, src))
 			}
 		}
 	}
 
-	return errors
+	return errs
 }
 
 // isExternalURL checks if the URL is external (http/https)
@@ -70,7 +64,7 @@ func isExternalURL(src string) bool {
 }
 
 // validateExternalImage checks if an external image URL is accessible
-func (v *ImageValidator) validateExternalImage(url string) error {
+func (v *Validator) validateExternalImage(url string) error {
 	client := &http.Client{
 		Timeout: v.Timeout,
 	}
@@ -89,7 +83,7 @@ func (v *ImageValidator) validateExternalImage(url string) error {
 }
 
 // validateLocalImage checks if a local image file exists
-func (v *ImageValidator) validateLocalImage(src, htmlPath, buildDir string) error {
+func (v *Validator) validateLocalImage(src, htmlPath, buildDir string) error {
 	var imagePath string
 
 	if strings.HasPrefix(src, "/") {

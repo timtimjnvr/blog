@@ -1,7 +1,6 @@
 package substitution
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -15,7 +14,7 @@ type Registry struct {
 }
 
 // NewRegistry creates a new substitution registry
-func NewRegistry[T context.Context]() *Registry {
+func NewRegistry() *Registry {
 	return &Registry{
 		substitutions: []Substituter{
 			content.NewSubstituer(),

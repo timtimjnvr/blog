@@ -1,4 +1,4 @@
-package validator
+package script
 
 import (
 	"os"
@@ -6,14 +6,14 @@ import (
 	"testing"
 )
 
-func TestNewScriptValidator(t *testing.T) {
-	v := NewScriptValidator()
+func TestNewValidator(t *testing.T) {
+	v := NewValidator()
 	if v == nil {
-		t.Fatal("NewScriptValidator returned nil")
+		t.Fatal("NewValidator returned nil")
 	}
 }
 
-func TestScriptValidator_ValidateLocalScript(t *testing.T) {
+func TestValidator_ValidateLocalScript(t *testing.T) {
 	buildDir := t.TempDir()
 	scriptsDir := filepath.Join(buildDir, "scripts")
 	if err := os.MkdirAll(scriptsDir, 0755); err != nil {
@@ -55,7 +55,7 @@ func TestScriptValidator_ValidateLocalScript(t *testing.T) {
 		},
 	}
 
-	v := NewScriptValidator()
+	v := NewValidator()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -68,7 +68,7 @@ func TestScriptValidator_ValidateLocalScript(t *testing.T) {
 	}
 }
 
-func TestScriptValidator_ValidateJSSyntax(t *testing.T) {
+func TestValidator_ValidateJSSyntax(t *testing.T) {
 	buildDir := t.TempDir()
 	scriptsDir := filepath.Join(buildDir, "scripts")
 	if err := os.MkdirAll(scriptsDir, 0755); err != nil {
@@ -112,7 +112,7 @@ func TestScriptValidator_ValidateJSSyntax(t *testing.T) {
 		},
 	}
 
-	v := NewScriptValidator()
+	v := NewValidator()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -133,7 +133,7 @@ func TestScriptValidator_ValidateJSSyntax(t *testing.T) {
 	}
 }
 
-func TestScriptValidator_RelativePath(t *testing.T) {
+func TestValidator_RelativePath(t *testing.T) {
 	buildDir := t.TempDir()
 
 	// Create nested structure: build/post/article.html and build/scripts/app.js
@@ -170,7 +170,7 @@ func TestScriptValidator_RelativePath(t *testing.T) {
 		},
 	}
 
-	v := NewScriptValidator()
+	v := NewValidator()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

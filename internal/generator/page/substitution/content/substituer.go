@@ -1,7 +1,7 @@
 package content
 
 import (
-	"github.com/timtimjnvr/blog/internal/markdown"
+	"github.com/timtimjnvr/blog/internal/generator/page/markdown"
 )
 
 // Substituter resolves {{content}} placeholder
