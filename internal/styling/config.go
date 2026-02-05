@@ -38,8 +38,8 @@ type Config struct {
 }
 
 // NewConfig creates a Config with empty maps.
-func NewConfig() *Config {
-	return &Config{
+func NewConfig() Config {
+	return Config{
 		Elements: make(map[string]string),
 		Contexts: make(map[string]map[string]string),
 	}

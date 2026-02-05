@@ -93,6 +93,11 @@ func (g *LegacyGenerator) Generate(contentDir, buildDir string) error {
 			return nil
 		}
 
+		// Copy non-markdown files (assets) to build directory
+		if err := g.copyAsset(path, relPath, buildDir); err != nil {
+			return err
+		}
+
 		return nil
 	})
 

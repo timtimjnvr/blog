@@ -10,48 +10,58 @@ import (
 	"github.com/timtimjnvr/blog/internal/generator/page"
 )
 
-type PageGenerator interface {
-	Generate() error
-}
+type (
+	PageGenerator interface {
+		Generate() error
+		Validate() error
+	}
 
-type PageGeneratorFactory func(markdownPath, buildDir string) PageGenerator
+	pageGeneratorFactory func(markdownPath, buildDir string) PageGenerator
+)
 
 type Generator struct {
-	ContentDir            string
-	AssetsDir             string
-	AssetsOutDir          string
-	BuildDir              string
-	ScriptsDir            string
-	ScriptsOutDir         string
-	SectionDirectoryNames []string
-	GeneratedPagesPath    []string
-	pageGeneratorFactory  PageGeneratorFactory
+	contentDir                string
+	assetsDir                 string
+	assetsOutDir              string
+	buildDir                  string
+	scriptsDir                string
+	scriptsOutDir             string
+	optionalStylingConfigPath string
+	pageGeneratorFactory      pageGeneratorFactory
+	sectionDirectoryNames     []string
+	pagesGenerators           []PageGenerator
 }
 
-func New() *Generator {
+func NewGenerator() *Generator {
 	return &Generator{
-		ContentDir:            "content/markdown",
-		AssetsDir:             "content/assets",
-		AssetsOutDir:          "assets",
-		BuildDir:              "target/build",
-		ScriptsDir:            "scripts",
-		ScriptsOutDir:         "scripts",
-		SectionDirectoryNames: make([]string, 0),
-		pageGeneratorFactory:  defaultPageGeneratorFactory,
+		contentDir:                "content/markdown",
+		assetsDir:                 "content/assets",
+		assetsOutDir:              "assets",
+		buildDir:                  "target/build",
+		scriptsDir:                "scripts",
+		scriptsOutDir:             "scripts",
+		optionalStylingConfigPath: "styles/styles.json",
+		sectionDirectoryNames:     make([]string, 0),
+		pagesGenerators:           make([]PageGenerator, 0),
+		pageGeneratorFactory:      defaultPageGeneratorFactory,
 	}
 }
 
 func defaultPageGeneratorFactory(markdownPath, buildDir string) PageGenerator {
-	return page.New(markdownPath, buildDir)
+	return page.NewGenerator(markdownPath, buildDir)
 }
 
 // WithPageGeneratorFactory sets a custom page generator factory.
-func (g *Generator) WithPageGeneratorFactory(factory PageGeneratorFactory) *Generator {
+func (g *Generator) WithPageGeneratorFactory(factory pageGeneratorFactory) *Generator {
 	g.pageGeneratorFactory = factory
 	return g
 }
 
 func (g *Generator) Generate() error {
+	if err := g.makeAllDirectories(); err != nil {
+		return fmt.Errorf("failed to create output directories: %v", err)
+	}
+
 	if err := g.listSections(); err != nil {
 		return fmt.Errorf("Failed to list site sections: %v", err)
 	}
@@ -68,24 +78,14 @@ func (g *Generator) Generate() error {
 		return fmt.Errorf("Failed to generate pages: %v", err)
 	}
 
-	if err := g.validate(); err != nil {
+	if err := g.Validate(); err != nil {
 		return fmt.Errorf("Failed to validate site: %v", err)
 	}
 	return nil
 }
 
-func (g *Generator) copyAssets() error {
-	return copyDir(g.AssetsDir, filepath.Join(g.BuildDir, "assets"), nil)
-}
-
-func (g *Generator) copyScripts() error {
-	return copyDir(g.ScriptsDir, filepath.Join(g.BuildDir, "scripts"), func(path string) bool {
-		return strings.HasSuffix(path, ".js")
-	})
-}
-
 func (g *Generator) listSections() error {
-	return filepath.Walk(g.ContentDir, func(path string, info os.FileInfo, err error) error {
+	return filepath.Walk(g.contentDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -95,7 +95,7 @@ func (g *Generator) listSections() error {
 			return nil
 		}
 
-		relPath, err := filepath.Rel(g.ContentDir, path)
+		relPath, err := filepath.Rel(g.contentDir, path)
 		if err != nil {
 			return err
 		}
@@ -106,16 +106,34 @@ func (g *Generator) listSections() error {
 		}
 
 		// Section directory
-		g.SectionDirectoryNames = append(g.SectionDirectoryNames, path)
+		g.sectionDirectoryNames = append(g.sectionDirectoryNames, path)
 		return nil
+	})
+}
+
+func (g *Generator) makeAllDirectories() error {
+	for _, d := range []string{g.assetsOutDir, g.scriptsOutDir, g.buildDir} {
+		if err := os.MkdirAll(filepath.Dir(d), 0755); err != nil {
+			return fmt.Errorf("creating directory %s: %w", d, err)
+		}
+	}
+
+	return nil
+}
+
+func (g *Generator) copyAssets() error {
+	return copyDir(g.assetsDir, filepath.Join(g.buildDir, "assets"), nil)
+}
+
+func (g *Generator) copyScripts() error {
+	return copyDir(g.scriptsDir, filepath.Join(g.buildDir, "scripts"), func(path string) bool {
+		return strings.HasSuffix(path, ".js")
 	})
 }
 
 func (g *Generator) generatePages() error {
 	errs := make([]error, 0)
-	g.GeneratedPagesPath = make([]string, 0)
-
-	err := filepath.Walk(g.ContentDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(g.contentDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -127,21 +145,22 @@ func (g *Generator) generatePages() error {
 
 		// Only Handling markdown files
 		if !strings.HasSuffix(path, ".md") {
-			return fmt.Errorf("wrong extension for file in %s", path)
-		}
-
-		pageGenerator := g.pageGeneratorFactory(path, g.BuildDir)
-		if err := pageGenerator.Generate(); err != nil {
-			errs = append(errs, err)
+			errs = append(errs, fmt.Errorf("wrong extension for file in %s", path))
 			return nil
 		}
 
-		g.GeneratedPagesPath = append(g.GeneratedPagesPath, path)
-
+		g.pagesGenerators = append(g.pagesGenerators, g.pageGeneratorFactory(path, g.buildDir))
 		return nil
 	})
+
 	if err != nil {
 		errs = append(errs, err)
+	}
+
+	for _, generator := range g.pagesGenerators {
+		if err := generator.Generate(); err != nil {
+			errs = append(errs, err)
+		}
 	}
 
 	if len(errs) != 0 {
@@ -151,6 +170,16 @@ func (g *Generator) generatePages() error {
 	return nil
 }
 
-func (g *Generator) validate() error {
+func (g *Generator) Validate() error {
+	errs := make([]error, 0)
+	for _, pg := range g.pagesGenerators {
+		if err := pg.Validate(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
 	return nil
 }

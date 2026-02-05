@@ -10,11 +10,16 @@ import (
 
 // mockPageGenerator is a test double for PageGenerator
 type mockPageGenerator struct {
-	err error
+	err         error
+	validateErr error
 }
 
 func (m *mockPageGenerator) Generate() error {
 	return m.err
+}
+
+func (m *mockPageGenerator) Validate() error {
+	return m.validateErr
 }
 
 // createDirs creates the base directory and any subdirectories relative to it
@@ -96,8 +101,8 @@ func TestGenerator_listSections(t *testing.T) {
 			createFiles(t, contentDir, tt.files...)
 
 			g := &Generator{
-				ContentDir:            contentDir,
-				SectionDirectoryNames: make([]string, 0),
+				contentDir:            contentDir,
+				sectionDirectoryNames: make([]string, 0),
 			}
 
 			err := g.listSections()
@@ -121,12 +126,12 @@ func TestGenerator_listSections(t *testing.T) {
 				}
 			}
 
-			if len(g.SectionDirectoryNames) != len(expectedPaths) {
-				t.Errorf("got %d sections, want %d\ngot: %v", len(g.SectionDirectoryNames), len(expectedPaths), g.SectionDirectoryNames)
+			if len(g.sectionDirectoryNames) != len(expectedPaths) {
+				t.Errorf("got %d sections, want %d\ngot: %v", len(g.sectionDirectoryNames), len(expectedPaths), g.sectionDirectoryNames)
 				return
 			}
 
-			for _, path := range g.SectionDirectoryNames {
+			for _, path := range g.sectionDirectoryNames {
 				if !expectedPaths[path] {
 					t.Errorf("unexpected section %q", path)
 				}
@@ -185,9 +190,9 @@ func TestGenerator_copyAssets(t *testing.T) {
 			createFiles(t, assetsDir, tt.srcFiles...)
 
 			g := &Generator{
-				AssetsDir:    assetsDir,
-				AssetsOutDir: "assets",
-				BuildDir:     buildDir,
+				assetsDir:    assetsDir,
+				assetsOutDir: "assets",
+				buildDir:     buildDir,
 			}
 
 			err := g.copyAssets()
@@ -201,7 +206,7 @@ func TestGenerator_copyAssets(t *testing.T) {
 				return
 			}
 
-			destDir := filepath.Join(buildDir, g.AssetsOutDir)
+			destDir := filepath.Join(buildDir, g.assetsOutDir)
 			gotFiles := listFiles(t, destDir)
 
 			if len(gotFiles) != len(tt.expectedFiles) {
@@ -228,8 +233,8 @@ func TestGenerator_generatePages_WithWrongExtension_ReturnsError(t *testing.T) {
 	createFiles(t, contentDir, "page.txt")
 
 	g := &Generator{
-		ContentDir: contentDir,
-		BuildDir:   buildDir,
+		contentDir: contentDir,
+		buildDir:   buildDir,
 		pageGeneratorFactory: func(markdownPath, buildDir string) PageGenerator {
 			return &mockPageGenerator{}
 		},
@@ -257,8 +262,8 @@ func TestGenerator_generatePages_WithPageGeneratorFailure_ReturnsErrors(t *testi
 	expectedErr := errors.New("page generation failed")
 
 	g := &Generator{
-		ContentDir: contentDir,
-		BuildDir:   buildDir,
+		contentDir: contentDir,
+		buildDir:   buildDir,
 		pageGeneratorFactory: func(markdownPath, buildDir string) PageGenerator {
 			return &mockPageGenerator{err: expectedErr}
 		},
@@ -285,8 +290,8 @@ func TestGenerator_generatePages_WithValidFiles_ReturnsNilAndPopulatesGeneratedP
 	createFiles(t, contentDir, "page1.md", "subdir/page2.md")
 
 	g := &Generator{
-		ContentDir: contentDir,
-		BuildDir:   buildDir,
+		contentDir: contentDir,
+		buildDir:   buildDir,
 		pageGeneratorFactory: func(markdownPath, buildDir string) PageGenerator {
 			return &mockPageGenerator{}
 		},
@@ -298,8 +303,8 @@ func TestGenerator_generatePages_WithValidFiles_ReturnsNilAndPopulatesGeneratedP
 		t.Fatalf("expected nil error, got: %v", err)
 	}
 
-	if len(g.GeneratedPagesPath) != 2 {
-		t.Errorf("expected 2 pages in GeneratedPagesPath, got %d", len(g.GeneratedPagesPath))
+	if len(g.pagesGenerators) != 2 {
+		t.Errorf("expected 2 pages in GeneratedPagesPath, got %d", len(g.pagesGenerators))
 	}
 }
 
@@ -342,9 +347,9 @@ func TestGenerator_copyScripts(t *testing.T) {
 			createFiles(t, scriptsDir, tt.srcFiles...)
 
 			g := &Generator{
-				ScriptsDir:    scriptsDir,
-				ScriptsOutDir: "scripts",
-				BuildDir:      buildDir,
+				scriptsDir:    scriptsDir,
+				scriptsOutDir: "scripts",
+				buildDir:      buildDir,
 			}
 
 			err := g.copyScripts()
@@ -358,7 +363,7 @@ func TestGenerator_copyScripts(t *testing.T) {
 				return
 			}
 
-			destDir := filepath.Join(buildDir, g.ScriptsOutDir)
+			destDir := filepath.Join(buildDir, g.scriptsOutDir)
 			gotFiles := listFiles(t, destDir)
 
 			if len(gotFiles) != len(tt.expectedFiles) {
