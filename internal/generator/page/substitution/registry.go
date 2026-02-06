@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/timtimjnvr/blog/internal/generator/page/substitution/content"
+	"github.com/timtimjnvr/blog/internal/generator/page/substitution/navigation"
 	"github.com/timtimjnvr/blog/internal/generator/page/substitution/title"
 )
 
@@ -14,10 +15,11 @@ type Registry struct {
 }
 
 // NewRegistry creates a new substitution registry with default substituters
-func NewRegistry() *Registry {
+func NewRegistry(sections []string, currentSection string) *Registry {
 	return NewRegistryWithSubstituters(
 		content.NewSubstituer(),
 		title.NewSubstituer(),
+		navigation.NewSubstituer(sections, currentSection),
 	)
 }
 

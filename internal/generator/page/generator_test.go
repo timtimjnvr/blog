@@ -17,8 +17,8 @@ func newTestGenerator(t *testing.T, markdownPath, buildDir, sectionName string, 
 		Elements: make(map[string]string),
 		Contexts: make(map[string]map[string]string),
 	}
-	subs := substitution.NewRegistry()
-	vals := validation.NewRegistry()
+	subs := substitution.NewRegistry(nil, sectionName)
+	vals := validation.NewRegistry(nil)
 	return NewGenerator(markdownPath, buildDir, sectionName, config, fs, subs, vals)
 }
 
@@ -174,8 +174,8 @@ func TestGenerator_Generate_SubstitutionError(t *testing.T) {
 		Elements: make(map[string]string),
 		Contexts: make(map[string]map[string]string),
 	}
-	subs := substitution.NewRegistry()
-	vals := validation.NewRegistry()
+	subs := substitution.NewRegistry(nil, "")
+	vals := validation.NewRegistry(nil)
 	g := NewGenerator("/content/notitle.md", "/build", "", config, fs, subs, vals)
 
 	err := g.Generate()
@@ -185,6 +185,79 @@ func TestGenerator_Generate_SubstitutionError(t *testing.T) {
 	if !strings.Contains(err.Error(), "template") {
 		t.Errorf("error should mention template projection, got %q", err.Error())
 	}
+}
+
+func TestGenerator_Generate_NavigationBar(t *testing.T) {
+	t.Run("generates navigation with sections from root", func(t *testing.T) {
+		fs := filesystem.NewMemoryFileSystem()
+		fs.AddFile("/content/index.md", []byte("# Home\n\nWelcome."))
+
+		config := styling.Config{
+			Elements: make(map[string]string),
+			Contexts: make(map[string]map[string]string),
+		}
+		subs := substitution.NewRegistry([]string{"posts", "about"}, "")
+		vals := validation.NewRegistry(nil)
+		g := NewGenerator("/content/index.md", "/build", "", config, fs, subs, vals)
+
+		err := g.Generate()
+		if err != nil {
+			t.Fatalf("Generate() unexpected error: %v", err)
+		}
+
+		output, ok := fs.GetFile("/build/index.html")
+		if !ok {
+			t.Fatal("Generate() did not write output file")
+		}
+
+		html := string(output)
+		if !strings.Contains(html, "<nav") {
+			t.Error("output should contain nav element")
+		}
+		if !strings.Contains(html, `href="index.html"`) {
+			t.Errorf("output should contain home link, got:\n%s", html)
+		}
+		if !strings.Contains(html, `href="posts/index.html"`) {
+			t.Errorf("output should contain posts link, got:\n%s", html)
+		}
+		if !strings.Contains(html, `href="about/index.html"`) {
+			t.Errorf("output should contain about link, got:\n%s", html)
+		}
+	})
+
+	t.Run("generates navigation with relative paths from section", func(t *testing.T) {
+		fs := filesystem.NewMemoryFileSystem()
+		fs.AddFile("/content/posts/hello.md", []byte("# Hello\n\nPost content."))
+
+		config := styling.Config{
+			Elements: make(map[string]string),
+			Contexts: make(map[string]map[string]string),
+		}
+		subs := substitution.NewRegistry([]string{"posts", "about"}, "posts")
+		vals := validation.NewRegistry(nil)
+		g := NewGenerator("/content/posts/hello.md", "/build", "posts", config, fs, subs, vals)
+
+		err := g.Generate()
+		if err != nil {
+			t.Fatalf("Generate() unexpected error: %v", err)
+		}
+
+		output, ok := fs.GetFile("/build/posts/hello.html")
+		if !ok {
+			t.Fatal("Generate() did not write output file")
+		}
+
+		html := string(output)
+		if !strings.Contains(html, `href="../index.html"`) {
+			t.Errorf("output should contain relative home link, got:\n%s", html)
+		}
+		if !strings.Contains(html, `href="../posts/index.html"`) {
+			t.Errorf("output should contain relative posts link, got:\n%s", html)
+		}
+		if !strings.Contains(html, `href="../about/index.html"`) {
+			t.Errorf("output should contain relative about link, got:\n%s", html)
+		}
+	})
 }
 
 func TestGenerator_Validate(t *testing.T) {

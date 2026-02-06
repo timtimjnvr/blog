@@ -99,6 +99,5 @@ func (g *Generator) Generate() error {
 }
 
 func (g *Generator) Validate() error {
-	g.validations.Validate(g.htmlOutputPath, g.buildDir, g.htmlContentBytes)
-	return nil
+	return g.validations.Validate(g.htmlOutputPath, g.buildDir, g.htmlContentBytes)
 }

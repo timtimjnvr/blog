@@ -15,27 +15,37 @@ func (f fakeValidator) Validate(htmlPath, buildDir string, content []byte) []err
 }
 
 func TestNewRegistry(t *testing.T) {
-	r := NewRegistry()
+	r := NewRegistry([]string{"posts", "about"})
 	if r == nil {
 		t.Fatal("NewRegistry() returned nil")
 	}
+	if len(r.validators) != 3 {
+		t.Errorf("NewRegistry() should have 3 validator (link, image, navigation), got %d", len(r.validators))
+	}
+}
+
+func TestNewRegistryWithValidators(t *testing.T) {
+	r := NewRegistryWithValidators()
+	if r == nil {
+		t.Fatal("NewRegistryWithValidators() returned nil")
+	}
 	if len(r.validators) != 0 {
-		t.Errorf("NewRegistry() should have 0 validators, got %d", len(r.validators))
+		t.Errorf("NewRegistryWithValidators() should have 0 validators, got %d", len(r.validators))
 	}
 }
 
 func TestNewDefaultRegistry(t *testing.T) {
-	r := NewDefaultRegistry()
+	r := NewDefaultRegistry([]string{"posts"})
 	if r == nil {
 		t.Fatal("NewDefaultRegistry() returned nil")
 	}
-	if len(r.validators) != 3 {
-		t.Errorf("NewDefaultRegistry() should have 3 validators (image, script, link), got %d", len(r.validators))
+	if len(r.validators) != 4 {
+		t.Errorf("NewDefaultRegistry() should have 4 validators (image, script, link, navigation), got %d", len(r.validators))
 	}
 }
 
 func TestRegistry_Register(t *testing.T) {
-	r := NewRegistry()
+	r := NewRegistryWithValidators()
 	v := fakeValidator{validateFunc: func(string, string, []byte) []error { return nil }}
 
 	r.Register(v)
@@ -118,13 +128,8 @@ func TestRegistry_Validate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := NewRegistry()
-			for _, v := range tt.validators {
-				r.Register(v)
-			}
-
+			r := NewRegistryWithValidators(tt.validators...)
 			err := r.Validate("test.html", "/build", []byte("<html></html>"))
-
 			if tt.wantErr {
 				if err == nil {
 					t.Error("Validate() expected error, got nil")

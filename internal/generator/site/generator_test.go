@@ -87,13 +87,13 @@ func TestWithBuilders(t *testing.T) {
 
 func TestWithPageGeneratorFactory(t *testing.T) {
 	called := false
-	factory := func(markdownPath, buildDir, section string, stylingConfig *styling.Config) PageGenerator {
+	factory := func(markdownPath, buildDir, section string, stylingConfig *styling.Config, sections []string) PageGenerator {
 		called = true
 		return &fakePageGenerator{}
 	}
 
 	g := NewGenerator().WithPageGeneratorFactory(factory)
-	g.pageGeneratorFactory("test.md", "/build", "", nil)
+	g.pageGeneratorFactory("test.md", "/build", "", nil, nil)
 
 	if !called {
 		t.Error("custom factory should have been called")
@@ -229,7 +229,7 @@ func TestGenerate_PageGeneratorError(t *testing.T) {
 		"index.md": "# Title",
 	})
 
-	factory := func(markdownPath, buildDir, section string, stylingConfig *styling.Config) PageGenerator {
+	factory := func(markdownPath, buildDir, section string, stylingConfig *styling.Config, sections []string) PageGenerator {
 		return &fakePageGenerator{generateErr: fmt.Errorf("page generation failed")}
 	}
 
@@ -254,7 +254,7 @@ func TestGenerate_ValidationError(t *testing.T) {
 		"index.md": "# Title",
 	})
 
-	factory := func(markdownPath, buildDir, section string, stylingConfig *styling.Config) PageGenerator {
+	factory := func(markdownPath, buildDir, section string, stylingConfig *styling.Config, sections []string) PageGenerator {
 		return &fakePageGenerator{validateErr: fmt.Errorf("validation failed")}
 	}
 
@@ -575,6 +575,145 @@ func TestIntegration_InlineAttributesWithoutConfig(t *testing.T) {
 	if !strings.Contains(html, `data-testid="section-1"`) {
 		t.Errorf("should have data attribute")
 	}
+}
+
+func TestIntegration_NavigationBar(t *testing.T) {
+	contentDir, buildDir := setupTestContent(t, map[string]string{
+		"index.md":            "# Home\n\nWelcome.\n",
+		"posts/index.md":      "# Posts\n\nArticle list.\n",
+		"posts/first-post.md": "# First Post\n\nContent.\n",
+		"about/index.md":      "# About\n\nAbout page.\n",
+	})
+
+	gen := createTestGenerator(contentDir, buildDir).
+		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
+		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
+	os.MkdirAll(gen.assetsDir, 0755)
+	os.MkdirAll(gen.scriptsDir, 0755)
+
+	err := gen.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	t.Run("root page has nav with all section links using non-prefixed paths", func(t *testing.T) {
+		homeContent, err := os.ReadFile(filepath.Join(buildDir, "index.html"))
+		if err != nil {
+			t.Fatalf("failed to read index.html: %v", err)
+		}
+		homeHTML := string(homeContent)
+
+		if !strings.Contains(homeHTML, "<nav") {
+			t.Error("should contain nav element")
+		}
+		if !strings.Contains(homeHTML, `href="index.html"`) {
+			t.Errorf("should have home link with non-prefixed path, got:\n%s", homeHTML)
+		}
+		if !strings.Contains(homeHTML, "Accueil") {
+			t.Error("should contain Accueil display name")
+		}
+		if !strings.Contains(homeHTML, "Posts") {
+			t.Error("should contain Posts display name")
+		}
+		if !strings.Contains(homeHTML, "About") {
+			t.Error("should contain About display name")
+		}
+		// Root page should NOT have ../ prefixed links
+		if strings.Contains(homeHTML, `href="../`) {
+			t.Errorf("root page should not have ../ prefixed nav links, got:\n%s", homeHTML)
+		}
+	})
+
+	t.Run("section index page has nav with ../ prefixed paths", func(t *testing.T) {
+		postsContent, err := os.ReadFile(filepath.Join(buildDir, "posts/index.html"))
+		if err != nil {
+			t.Fatalf("failed to read posts/index.html: %v", err)
+		}
+		postsHTML := string(postsContent)
+
+		if !strings.Contains(postsHTML, "<nav") {
+			t.Error("should contain nav element")
+		}
+		if !strings.Contains(postsHTML, `href="../index.html"`) {
+			t.Errorf("should have ../ prefixed home link, got:\n%s", postsHTML)
+		}
+		if !strings.Contains(postsHTML, `href="../posts/index.html"`) {
+			t.Errorf("should have ../ prefixed posts link, got:\n%s", postsHTML)
+		}
+		if !strings.Contains(postsHTML, `href="../about/index.html"`) {
+			t.Errorf("should have ../ prefixed about link, got:\n%s", postsHTML)
+		}
+		if !strings.Contains(postsHTML, "Accueil") {
+			t.Error("should contain Accueil display name")
+		}
+	})
+
+	t.Run("non-index page in section also has nav with ../ prefixed paths", func(t *testing.T) {
+		postContent, err := os.ReadFile(filepath.Join(buildDir, "posts/first-post.html"))
+		if err != nil {
+			t.Fatalf("failed to read posts/first-post.html: %v", err)
+		}
+		postHTML := string(postContent)
+
+		if !strings.Contains(postHTML, "<nav") {
+			t.Error("should contain nav element")
+		}
+		if !strings.Contains(postHTML, `href="../index.html"`) {
+			t.Errorf("should have ../ prefixed home link, got:\n%s", postHTML)
+		}
+		if !strings.Contains(postHTML, `href="../posts/index.html"`) {
+			t.Errorf("should have ../ prefixed posts link, got:\n%s", postHTML)
+		}
+		if !strings.Contains(postHTML, `href="../about/index.html"`) {
+			t.Errorf("should have ../ prefixed about link, got:\n%s", postHTML)
+		}
+	})
+
+	t.Run("about section page has nav with ../ prefixed paths", func(t *testing.T) {
+		aboutContent, err := os.ReadFile(filepath.Join(buildDir, "about/index.html"))
+		if err != nil {
+			t.Fatalf("failed to read about/index.html: %v", err)
+		}
+		aboutHTML := string(aboutContent)
+
+		if !strings.Contains(aboutHTML, "<nav") {
+			t.Error("should contain nav element")
+		}
+		if !strings.Contains(aboutHTML, `href="../index.html"`) {
+			t.Errorf("should have ../ prefixed home link, got:\n%s", aboutHTML)
+		}
+		if !strings.Contains(aboutHTML, `href="../posts/index.html"`) {
+			t.Errorf("should have ../ prefixed posts link, got:\n%s", aboutHTML)
+		}
+		if !strings.Contains(aboutHTML, "Posts") {
+			t.Error("should contain Posts display name")
+		}
+	})
+
+	t.Run("all pages have consistent navigation links", func(t *testing.T) {
+		pages := []string{
+			"index.html",
+			"posts/index.html",
+			"posts/first-post.html",
+			"about/index.html",
+		}
+		for _, page := range pages {
+			content, err := os.ReadFile(filepath.Join(buildDir, page))
+			if err != nil {
+				t.Fatalf("failed to read %s: %v", page, err)
+			}
+			html := string(content)
+			if !strings.Contains(html, "Accueil") {
+				t.Errorf("%s should contain Accueil nav link", page)
+			}
+			if !strings.Contains(html, "Posts") {
+				t.Errorf("%s should contain Posts nav link", page)
+			}
+			if !strings.Contains(html, "About") {
+				t.Errorf("%s should contain About nav link", page)
+			}
+		}
+	})
 }
 
 func TestIntegration_InvalidStyleConfigReturnsError(t *testing.T) {

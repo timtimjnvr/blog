@@ -1,7 +1,3 @@
-[Accueil](index.md) | [Articles](posts/index.md) | [À propos](about/index.md)
-
----
-
 # Bienvenue sur mon blog
 
 Ceci est mon site personnel où je partage mes réflexions et articles.

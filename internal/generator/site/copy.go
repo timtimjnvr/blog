@@ -41,7 +41,7 @@ func copyDir(srcDir, destDir string, filter func(path string) bool) error {
 		if err := os.WriteFile(outPath, data, 0644); err != nil {
 			return fmt.Errorf("writing %s: %w", outPath, err)
 		}
-
+		fmt.Printf("Copied: %s -> %s\n", relPath, outPath)
 		return nil
 	})
 }

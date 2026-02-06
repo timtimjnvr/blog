@@ -20,7 +20,7 @@ type (
 		Validate() error
 	}
 
-	pageGeneratorFactory func(markdownPath, buildDir, section string, stylingConfig *styling.Config) PageGenerator
+	pageGeneratorFactory func(markdownPath, buildDir, section string, stylingConfig *styling.Config, sections []string) PageGenerator
 )
 
 type Generator struct {
@@ -53,7 +53,7 @@ func NewGenerator() *Generator {
 	}
 }
 
-func defaultPageGeneratorFactory(markdownPath, buildDir, section string, stylingConfig *styling.Config) PageGenerator {
+func defaultPageGeneratorFactory(markdownPath, buildDir, section string, stylingConfig *styling.Config, sections []string) PageGenerator {
 	var config styling.Config
 	if stylingConfig != nil {
 		config = *stylingConfig
@@ -61,8 +61,8 @@ func defaultPageGeneratorFactory(markdownPath, buildDir, section string, styling
 
 	// Create dependencies
 	fs := filesystem.NewOSFileSystem()
-	substitutions := substitution.NewRegistry()
-	validations := validation.NewRegistry()
+	substitutions := substitution.NewRegistry(sections, section)
+	validations := validation.NewRegistry(sections)
 
 	return page.NewGenerator(markdownPath, buildDir, section, config, fs, substitutions, validations)
 }
@@ -166,8 +166,13 @@ func (g *Generator) listSections() error {
 			return nil
 		}
 
+		// Skip the content directory itself
+		if relPath == "." {
+			return nil
+		}
+
 		// Section directory
-		g.sectionDirectoryNames = append(g.sectionDirectoryNames, path)
+		g.sectionDirectoryNames = append(g.sectionDirectoryNames, relPath)
 		return nil
 	})
 }
@@ -217,7 +222,7 @@ func (g *Generator) generatePages() error {
 			return nil
 		}
 
-		g.pagesGenerators = append(g.pagesGenerators, g.pageGeneratorFactory(pageFilePath, g.buildDir, pageSection, g.stylingConfig))
+		g.pagesGenerators = append(g.pagesGenerators, g.pageGeneratorFactory(pageFilePath, g.buildDir, pageSection, g.stylingConfig, g.sectionDirectoryNames))
 		return nil
 	})
 

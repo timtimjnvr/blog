@@ -1,9 +1,3 @@
-[Accueil](../index.md) | [Articles](index.md) | [À propos](../about/index.md)
-
-[← Retour aux articles](index.md)
-
----
-
 # Deuxième article
 
 Ceci est un deuxième article pour démontrer la liste d'articles.

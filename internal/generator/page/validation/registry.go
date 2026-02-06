@@ -5,6 +5,7 @@ import (
 
 	"github.com/timtimjnvr/blog/internal/generator/page/validation/image"
 	"github.com/timtimjnvr/blog/internal/generator/page/validation/link"
+	"github.com/timtimjnvr/blog/internal/generator/page/validation/navigation"
 	"github.com/timtimjnvr/blog/internal/generator/page/validation/script"
 )
 
@@ -13,20 +14,32 @@ type Registry struct {
 	validators []Validator
 }
 
-// NewRegistry creates an empty validation registry
-func NewRegistry() *Registry {
+// NewRegistry creates a validation registry with the navigation validator configured for the given sections
+func NewRegistry(sections []string) *Registry {
 	return &Registry{
-		validators: []Validator{},
+		validators: []Validator{
+			link.NewValidator(),
+			image.NewValidator(),
+			navigation.NewValidator(sections),
+		},
 	}
 }
 
-// NewDefaultRegistry creates a validation registry with default validators (image, script, link)
-func NewDefaultRegistry() *Registry {
+// NewRegistryWithValidators creates a registry with custom validators
+func NewRegistryWithValidators(validators ...Validator) *Registry {
+	return &Registry{
+		validators: validators,
+	}
+}
+
+// NewDefaultRegistry creates a validation registry with default validators (image, script, link, navigation)
+func NewDefaultRegistry(sections []string) *Registry {
 	return &Registry{
 		validators: []Validator{
 			image.NewValidator(),
 			script.NewValidator(),
 			link.NewValidator(),
+			navigation.NewValidator(sections),
 		},
 	}
 }

@@ -1,9 +1,3 @@
-[Accueil](../index.md) | [Articles](index.md) | [À propos](../about/index.md)
-
-[← Retour aux articles](index.md)
-
----
-
 # Hello World
 
 This is my first blog post!

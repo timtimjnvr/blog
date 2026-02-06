@@ -18,12 +18,12 @@ func (f fakeSubstituter) Resolve(content string) (string, error) {
 }
 
 func TestNewRegistry(t *testing.T) {
-	r := NewRegistry()
+	r := NewRegistry([]string{"posts", "about"}, "")
 	if r == nil {
 		t.Fatal("NewRegistry() returned nil")
 	}
-	if len(r.substitutions) != 2 {
-		t.Errorf("NewRegistry() should have 2 default substituters, got %d", len(r.substitutions))
+	if len(r.substitutions) != 3 {
+		t.Errorf("NewRegistry() should have 3 default substituters, got %d", len(r.substitutions))
 	}
 }
 
@@ -151,8 +151,8 @@ func TestRegistry_Apply(t *testing.T) {
 }
 
 func TestRegistry_Apply_WithDefaultSubstituters(t *testing.T) {
-	r := NewRegistry()
-	template := `<title>{{title}}</title><body>{{content}}</body>`
+	r := NewRegistry([]string{"posts"}, "")
+	template := `<title>{{title}}</title><div>{{navigation}}</div><body>{{content}}</body>`
 	content := `<h1>Test Title</h1><p>Hello world</p>`
 
 	result, err := r.Apply(template, content)
@@ -165,5 +165,8 @@ func TestRegistry_Apply_WithDefaultSubstituters(t *testing.T) {
 	}
 	if !strings.Contains(result, "<p>Hello world</p>") {
 		t.Errorf("expected content substitution, got %q", result)
+	}
+	if !strings.Contains(result, "<nav") {
+		t.Errorf("expected navigation substitution, got %q", result)
 	}
 }

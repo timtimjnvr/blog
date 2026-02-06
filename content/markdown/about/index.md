@@ -1,7 +1,3 @@
-[Accueil](../index.md) | [Articles](../posts/index.md) | [À propos](index.md)
-
----
-
 # About
 
 Lorem ipsum dolor sit amet, *consectetur adipiscing elit*. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
