@@ -8,7 +8,10 @@ import (
 	"strings"
 
 	"github.com/timtimjnvr/blog/internal/generator/page"
+	"github.com/timtimjnvr/blog/internal/generator/page/filesystem"
 	"github.com/timtimjnvr/blog/internal/generator/page/styling"
+	"github.com/timtimjnvr/blog/internal/generator/page/substitution"
+	"github.com/timtimjnvr/blog/internal/generator/page/validation"
 )
 
 type (
@@ -55,7 +58,13 @@ func defaultPageGeneratorFactory(markdownPath, buildDir, section string, styling
 	if stylingConfig != nil {
 		config = *stylingConfig
 	}
-	return page.NewGenerator(markdownPath, buildDir, section, config)
+
+	// Create dependencies
+	fs := filesystem.NewOSFileSystem()
+	substitutions := substitution.NewRegistry()
+	validations := validation.NewRegistry()
+
+	return page.NewGenerator(markdownPath, buildDir, section, config, fs, substitutions, validations)
 }
 
 // WithPageGeneratorFactory sets a custom page generator factory.

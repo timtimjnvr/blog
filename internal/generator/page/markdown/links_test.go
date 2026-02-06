@@ -135,6 +135,135 @@ func TestConvertMdLinksToHtml(t *testing.T) {
 	}
 }
 
+func TestConvertMdLinksToHtml_EmptySourceRelPath(t *testing.T) {
+	tests := []struct {
+		name     string
+		html     string
+		expected string
+	}{
+		{
+			name:     "simple md link replacement",
+			html:     `<a href="page.md">Page</a>`,
+			expected: `<a href="page.html">Page</a>`,
+		},
+		{
+			name:     "nested md link replacement",
+			html:     `<a href="posts/hello.md">Hello</a>`,
+			expected: `<a href="posts/hello.html">Hello</a>`,
+		},
+		{
+			name:     "parent path md link replacement",
+			html:     `<a href="../index.md">Home</a>`,
+			expected: `<a href="../index.html">Home</a>`,
+		},
+		{
+			name:     "multiple md links",
+			html:     `<a href="a.md">A</a> <a href="b.md">B</a>`,
+			expected: `<a href="a.html">A</a> <a href="b.html">B</a>`,
+		},
+		{
+			name:     "no md links unchanged",
+			html:     `<a href="https://example.com">Ext</a>`,
+			expected: `<a href="https://example.com">Ext</a>`,
+		},
+		{
+			name:     "empty html",
+			html:     ``,
+			expected: ``,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ConvertMdLinksToHtml(tt.html, "")
+			if result != tt.expected {
+				t.Errorf("ConvertMdLinksToHtml(%q, \"\") = %q, want %q",
+					tt.html, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestConvertAssetPaths(t *testing.T) {
+	tests := []struct {
+		name          string
+		html          string
+		sourceRelPath string
+		expected      string
+	}{
+		{
+			name:          "absolute path unchanged",
+			html:          `<img src="/images/logo.png">`,
+			sourceRelPath: "posts/hello.md",
+			expected:      `<img src="/images/logo.png">`,
+		},
+		{
+			name:          "external url unchanged",
+			html:          `<img src="https://example.com/img.png">`,
+			sourceRelPath: "posts/hello.md",
+			expected:      `<img src="https://example.com/img.png">`,
+		},
+		{
+			name:          "http url unchanged",
+			html:          `<img src="http://example.com/img.png">`,
+			sourceRelPath: "posts/hello.md",
+			expected:      `<img src="http://example.com/img.png">`,
+		},
+		{
+			name:          "relative path without parent ref unchanged",
+			html:          `<img src="image.png">`,
+			sourceRelPath: "posts/hello.md",
+			expected:      `<img src="image.png">`,
+		},
+		{
+			name:          "parent relative path stays relative to output dir",
+			html:          `<img src="../assets/image.png">`,
+			sourceRelPath: "posts/hello.md",
+			expected:      `<img src="../assets/image.png">`,
+		},
+		{
+			name:          "no img tags unchanged",
+			html:          `<p>No images</p>`,
+			sourceRelPath: "index.md",
+			expected:      `<p>No images</p>`,
+		},
+		{
+			name:          "empty html",
+			html:          ``,
+			sourceRelPath: "index.md",
+			expected:      ``,
+		},
+		{
+			name:          "multiple img tags with parent refs",
+			html:          `<img src="../assets/a.png"> and <img src="../assets/b.png">`,
+			sourceRelPath: "posts/hello.md",
+			expected:      `<img src="../assets/a.png"> and <img src="../assets/b.png">`,
+		},
+		{
+			name:          "img with other attributes and parent ref",
+			html:          `<img class="w-full" src="../assets/photo.jpg" alt="Photo">`,
+			sourceRelPath: "posts/hello.md",
+			expected:      `<img class="w-full" src="../assets/photo.jpg" alt="Photo">`,
+		},
+		{
+			name:          "deeply nested source with parent ref adjusts path",
+			html:          `<img src="../../assets/image.png">`,
+			sourceRelPath: "content/posts/hello.md",
+			expected:      `<img src="../../assets/image.png">`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ConvertAssetPaths(tt.html, tt.sourceRelPath)
+			if result != tt.expected {
+				t.Errorf("ConvertAssetPaths(%q, %q) = %q, want %q",
+					tt.html, tt.sourceRelPath, result, tt.expected)
+			}
+		})
+	}
+}
+
 func TestConvertMdLinksToHtml_RelativePathCalculation(t *testing.T) {
 	tests := []struct {
 		name          string

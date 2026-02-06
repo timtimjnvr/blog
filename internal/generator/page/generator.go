@@ -4,10 +4,10 @@ import (
 	_ "embed"
 
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/timtimjnvr/blog/internal/generator/page/filesystem"
 	"github.com/timtimjnvr/blog/internal/generator/page/markdown"
 	"github.com/timtimjnvr/blog/internal/generator/page/styling"
 	"github.com/timtimjnvr/blog/internal/generator/page/substitution"
@@ -25,11 +25,20 @@ type Generator struct {
 	htmlContentBytes []byte
 	htmlOutputPath   string
 	sectionName      string
+	fs               filesystem.FileSystem
 	substitutions    *substitution.Registry
 	validations      *validation.Registry
 }
 
-func NewGenerator(markdownPath string, buildDir string, sectionName string, stylingConfig styling.Config) *Generator {
+func NewGenerator(
+	markdownPath string,
+	buildDir string,
+	sectionName string,
+	stylingConfig styling.Config,
+	fs filesystem.FileSystem,
+	substitutions *substitution.Registry,
+	validations *validation.Registry,
+) *Generator {
 	var (
 		baseName       = filepath.Base(markdownPath)
 		outName        = strings.TrimSuffix(baseName, ".md") + ".html"
@@ -48,14 +57,15 @@ func NewGenerator(markdownPath string, buildDir string, sectionName string, styl
 		buildDir:         buildDir,
 		sectionName:      sectionName,
 		stylingConfig:    stylingConfig,
-		substitutions:    substitution.NewRegistry(),
-		validations:      validation.NewRegistry(),
+		fs:               fs,
+		substitutions:    substitutions,
+		validations:      validations,
 	}
 }
 
 func (g *Generator) Generate() error {
 	// Read markdown file
-	markdDownSourceContent, err := os.ReadFile(g.markdownPath)
+	markdDownSourceContent, err := g.fs.ReadFile(g.markdownPath)
 	if err != nil {
 		return fmt.Errorf("reading %s: %w", g.markdownPath, err)
 	}
@@ -73,13 +83,13 @@ func (g *Generator) Generate() error {
 	}
 
 	// Ensure output directory exists
-	if err := os.MkdirAll(filepath.Dir(g.htmlOutputPath), 0755); err != nil {
+	if err := g.fs.MkdirAll(filepath.Dir(g.htmlOutputPath), 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
 	// Write HTML file
 	htmlContentBytes := []byte(htmlContent)
-	if err := os.WriteFile(g.htmlOutputPath, htmlContentBytes, 0644); err != nil {
+	if err := g.fs.WriteFile(g.htmlOutputPath, htmlContentBytes, 0644); err != nil {
 		return fmt.Errorf("failed to write %s: %w", g.htmlOutputPath, err)
 	}
 

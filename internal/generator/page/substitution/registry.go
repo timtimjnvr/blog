@@ -13,13 +13,18 @@ type Registry struct {
 	substitutions []Substituter
 }
 
-// NewRegistry creates a new substitution registry
+// NewRegistry creates a new substitution registry with default substituters
 func NewRegistry() *Registry {
+	return NewRegistryWithSubstituters(
+		content.NewSubstituer(),
+		title.NewSubstituer(),
+	)
+}
+
+// NewRegistryWithSubstituters creates a registry with custom substituters
+func NewRegistryWithSubstituters(subs ...Substituter) *Registry {
 	return &Registry{
-		substitutions: []Substituter{
-			content.NewSubstituer(),
-			title.NewSubstituer(),
-		},
+		substitutions: subs,
 	}
 }
 
