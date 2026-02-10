@@ -722,6 +722,41 @@ func TestIntegration_NavigationBar(t *testing.T) {
 	})
 }
 
+func TestIntegration_AssetPathConversion(t *testing.T) {
+	contentDir, buildDir := setupTestContent(t, map[string]string{
+		"index.md":             "# Home\n\nWelcome.\n",
+		"posts/index.md":       "# Posts\n\nArticle list.\n",
+		"posts/second-post.md": "# Second Post\n\nContent.\n\n![Image](../../assets/images/photo.png)\n",
+	})
+
+	assetsDir := t.TempDir()
+	_ = os.MkdirAll(filepath.Join(assetsDir, "images"), 0755)
+	_ = os.WriteFile(filepath.Join(assetsDir, "images/photo.png"), []byte("fake png data"), 0644)
+
+	gen := createTestGenerator(contentDir, buildDir).
+		WithAssetsDir(assetsDir).
+		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
+	_ = os.MkdirAll(gen.scriptsDir, 0755)
+
+	err := gen.Generate()
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	postContent, err := os.ReadFile(filepath.Join(buildDir, "posts/second-post.html"))
+	if err != nil {
+		t.Fatalf("failed to read posts/second-post.html: %v", err)
+	}
+	postHTML := string(postContent)
+
+	// The image is at target/build/assets/images/photo.png
+	// The HTML is at target/build/posts/second-post.html
+	// So the correct relative path is ../assets/images/photo.png
+	if !strings.Contains(postHTML, `src="../assets/images/photo.png"`) {
+		t.Errorf("expected src=\"../assets/images/photo.png\" in output, got:\n%s", postHTML)
+	}
+}
+
 func TestIntegration_InvalidStyleConfigReturnsError(t *testing.T) {
 	invalidConfig := `{"elements": {"invalid_key": "some-class"}}`
 	_, err := styling.ParseConfig([]byte(invalidConfig))
