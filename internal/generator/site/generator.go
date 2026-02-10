@@ -113,23 +113,23 @@ func (g *Generator) Generate() error {
 	}
 
 	if err := g.listSections(); err != nil {
-		return fmt.Errorf("Failed to list site sections: %v", err)
+		return fmt.Errorf("failed to list site sections: %v", err)
 	}
 
 	if err := g.copyAssets(); err != nil {
-		return fmt.Errorf("Failed to copy assets: %v", err)
+		return fmt.Errorf("failed to copy assets: %v", err)
 	}
 
 	if err := g.copyScripts(); err != nil {
-		return fmt.Errorf("Failed to copy scripts: %v", err)
+		return fmt.Errorf("failed to copy scripts: %v", err)
 	}
 
 	if err := g.generatePages(); err != nil {
-		return fmt.Errorf("Failed to generate pages: %v", err)
+		return fmt.Errorf("failed to generate pages: %v", err)
 	}
 
 	if err := g.Validate(); err != nil {
-		return fmt.Errorf("Failed to validate site: %v", err)
+		return fmt.Errorf("failed to validate site: %v", err)
 	}
 	return nil
 }

@@ -177,7 +177,7 @@ func TestGenerate_LoadStylingConfigError(t *testing.T) {
 
 	// Create an invalid styling config file
 	styleConfigPath := filepath.Join(t.TempDir(), "bad-styles.json")
-	os.WriteFile(styleConfigPath, []byte(`{"elements": {"bad_key": "class"}}`), 0644)
+	_ = os.WriteFile(styleConfigPath, []byte(`{"elements": {"bad_key": "class"}}`), 0644)
 
 	gen := createTestGenerator(contentDir, buildDir).WithStylingConfigPath(styleConfigPath)
 	err := gen.Generate()
@@ -212,8 +212,8 @@ func TestGenerate_NonMdFilesReportError(t *testing.T) {
 		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
 
 	// Create empty assets/scripts dirs so copyDir doesn't fail
-	os.MkdirAll(gen.assetsDir, 0755)
-	os.MkdirAll(gen.scriptsDir, 0755)
+	_ = os.MkdirAll(gen.assetsDir, 0755)
+	_ = os.MkdirAll(gen.scriptsDir, 0755)
 
 	err := gen.Generate()
 	if err == nil {
@@ -237,8 +237,8 @@ func TestGenerate_PageGeneratorError(t *testing.T) {
 		WithPageGeneratorFactory(factory).
 		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
 		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
-	os.MkdirAll(gen.assetsDir, 0755)
-	os.MkdirAll(gen.scriptsDir, 0755)
+	_ = os.MkdirAll(gen.assetsDir, 0755)
+	_ = os.MkdirAll(gen.scriptsDir, 0755)
 
 	err := gen.Generate()
 	if err == nil {
@@ -262,8 +262,8 @@ func TestGenerate_ValidationError(t *testing.T) {
 		WithPageGeneratorFactory(factory).
 		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
 		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
-	os.MkdirAll(gen.assetsDir, 0755)
-	os.MkdirAll(gen.scriptsDir, 0755)
+	_ = os.MkdirAll(gen.assetsDir, 0755)
+	_ = os.MkdirAll(gen.scriptsDir, 0755)
 
 	err := gen.Generate()
 	if err == nil {
@@ -324,8 +324,8 @@ func TestIntegration_BasicSiteGeneration(t *testing.T) {
 	gen := createTestGenerator(contentDir, buildDir).
 		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
 		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
-	os.MkdirAll(gen.assetsDir, 0755)
-	os.MkdirAll(gen.scriptsDir, 0755)
+	_ = os.MkdirAll(gen.assetsDir, 0755)
+	_ = os.MkdirAll(gen.scriptsDir, 0755)
 
 	err := gen.Generate()
 	if err != nil {
@@ -349,17 +349,18 @@ func TestIntegration_BasicSiteGeneration(t *testing.T) {
 
 func TestIntegration_ScriptsCopied(t *testing.T) {
 	contentDir, buildDir := setupTestContent(t, map[string]string{
-		"page.md": "# Page",
+		"index.md": "# Home\n",
+		"page.md":  "# Page",
 	})
 
 	scriptsDir := t.TempDir()
 	scriptContent := `(function() { console.log("test"); })();`
-	os.WriteFile(filepath.Join(scriptsDir, "test.js"), []byte(scriptContent), 0644)
+	_ = os.WriteFile(filepath.Join(scriptsDir, "test.js"), []byte(scriptContent), 0644)
 
 	gen := createTestGenerator(contentDir, buildDir).
 		WithScriptsDir(scriptsDir).
 		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets"))
-	os.MkdirAll(gen.assetsDir, 0755)
+	_ = os.MkdirAll(gen.assetsDir, 0755)
 
 	err := gen.Generate()
 	if err != nil {
@@ -377,7 +378,8 @@ func TestIntegration_ScriptsCopied(t *testing.T) {
 
 func TestIntegration_DarkModeScriptCopied(t *testing.T) {
 	contentDir, buildDir := setupTestContent(t, map[string]string{
-		"page.md": "# Page",
+		"index.md": "# Home\n",
+		"page.md":  "# Page",
 	})
 
 	scriptsDir := t.TempDir()
@@ -386,12 +388,12 @@ func TestIntegration_DarkModeScriptCopied(t *testing.T) {
   function toggleTheme() { /* toggle */ }
   window.toggleTheme = toggleTheme;
 })();`
-	os.WriteFile(filepath.Join(scriptsDir, "dark-mode.js"), []byte(darkModeScript), 0644)
+	_ = os.WriteFile(filepath.Join(scriptsDir, "dark-mode.js"), []byte(darkModeScript), 0644)
 
 	gen := createTestGenerator(contentDir, buildDir).
 		WithScriptsDir(scriptsDir).
 		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets"))
-	os.MkdirAll(gen.assetsDir, 0755)
+	_ = os.MkdirAll(gen.assetsDir, 0755)
 
 	err := gen.Generate()
 	if err != nil {
@@ -417,8 +419,8 @@ func TestIntegration_LinkConversion(t *testing.T) {
 	gen := createTestGenerator(contentDir, buildDir).
 		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
 		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
-	os.MkdirAll(gen.assetsDir, 0755)
-	os.MkdirAll(gen.scriptsDir, 0755)
+	_ = os.MkdirAll(gen.assetsDir, 0755)
+	_ = os.MkdirAll(gen.scriptsDir, 0755)
 
 	err := gen.Generate()
 	if err != nil {
@@ -441,18 +443,19 @@ func TestIntegration_LinkConversion(t *testing.T) {
 
 func TestIntegration_StaticAssetsCopied(t *testing.T) {
 	contentDir, buildDir := setupTestContent(t, map[string]string{
-		"page.md": "# Page",
+		"index.md": "# Home\n",
+		"page.md":  "# Page",
 	})
 
 	assetsDir := t.TempDir()
-	os.MkdirAll(filepath.Join(assetsDir, "images"), 0755)
-	os.WriteFile(filepath.Join(assetsDir, "style.css"), []byte("body { color: red; }"), 0644)
-	os.WriteFile(filepath.Join(assetsDir, "images/bg.png"), []byte("fake png data"), 0644)
+	_ = os.MkdirAll(filepath.Join(assetsDir, "images"), 0755)
+	_ = os.WriteFile(filepath.Join(assetsDir, "style.css"), []byte("body { color: red; }"), 0644)
+	_ = os.WriteFile(filepath.Join(assetsDir, "images/bg.png"), []byte("fake png data"), 0644)
 
 	gen := createTestGenerator(contentDir, buildDir).
 		WithAssetsDir(assetsDir).
 		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
-	os.MkdirAll(gen.scriptsDir, 0755)
+	_ = os.MkdirAll(gen.scriptsDir, 0755)
 
 	err := gen.Generate()
 	if err != nil {
@@ -474,14 +477,15 @@ func TestIntegration_StaticAssetsCopied(t *testing.T) {
 
 func TestIntegration_TitleExtraction(t *testing.T) {
 	contentDir, buildDir := setupTestContent(t, map[string]string{
-		"page.md": "# My Page Title\n\nSome content.\n",
+		"index.md": "# Home\n",
+		"page.md":  "# My Page Title\n\nSome content.\n",
 	})
 
 	gen := createTestGenerator(contentDir, buildDir).
 		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
 		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
-	os.MkdirAll(gen.assetsDir, 0755)
-	os.MkdirAll(gen.scriptsDir, 0755)
+	_ = os.MkdirAll(gen.assetsDir, 0755)
+	_ = os.MkdirAll(gen.scriptsDir, 0755)
 
 	err := gen.Generate()
 	if err != nil {
@@ -499,11 +503,12 @@ func TestIntegration_TitleExtraction(t *testing.T) {
 
 func TestIntegration_StyleConfigApplied(t *testing.T) {
 	contentDir, buildDir := setupTestContent(t, map[string]string{
-		"page.md": "# Main Title\n\nA paragraph with a [link](https://example.com).\n\n> A blockquote\n\n- List item\n",
+		"index.md": "# Home\n",
+		"page.md":  "# Main Title\n\nA paragraph with a [link](https://example.com).\n\n> A blockquote\n\n- List item\n",
 	})
 
 	styleConfigPath := filepath.Join(t.TempDir(), "styles.json")
-	os.WriteFile(styleConfigPath, []byte(`{
+	_ = os.WriteFile(styleConfigPath, []byte(`{
 		"elements": {
 			"heading1": "custom-h1-class",
 			"paragraph": "custom-p-class",
@@ -517,8 +522,8 @@ func TestIntegration_StyleConfigApplied(t *testing.T) {
 		WithStylingConfigPath(styleConfigPath).
 		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
 		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
-	os.MkdirAll(gen.assetsDir, 0755)
-	os.MkdirAll(gen.scriptsDir, 0755)
+	_ = os.MkdirAll(gen.assetsDir, 0755)
+	_ = os.MkdirAll(gen.scriptsDir, 0755)
 
 	err := gen.Generate()
 	if err != nil {
@@ -546,14 +551,15 @@ func TestIntegration_StyleConfigApplied(t *testing.T) {
 
 func TestIntegration_InlineAttributesWithoutConfig(t *testing.T) {
 	contentDir, buildDir := setupTestContent(t, map[string]string{
-		"page.md": "# Title {.my-class #my-id}\n\n## Section {data-testid=section-1}\n",
+		"index.md": "# Home\n",
+		"page.md":  "# Title {.my-class #my-id}\n\n## Section {data-testid=section-1}\n",
 	})
 
 	gen := createTestGenerator(contentDir, buildDir).
 		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
 		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
-	os.MkdirAll(gen.assetsDir, 0755)
-	os.MkdirAll(gen.scriptsDir, 0755)
+	_ = os.MkdirAll(gen.assetsDir, 0755)
+	_ = os.MkdirAll(gen.scriptsDir, 0755)
 
 	err := gen.Generate()
 	if err != nil {
@@ -588,8 +594,8 @@ func TestIntegration_NavigationBar(t *testing.T) {
 	gen := createTestGenerator(contentDir, buildDir).
 		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
 		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
-	os.MkdirAll(gen.assetsDir, 0755)
-	os.MkdirAll(gen.scriptsDir, 0755)
+	_ = os.MkdirAll(gen.assetsDir, 0755)
+	_ = os.MkdirAll(gen.scriptsDir, 0755)
 
 	err := gen.Generate()
 	if err != nil {

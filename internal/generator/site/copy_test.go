@@ -114,7 +114,7 @@ func TestCopyDir(t *testing.T) {
 
 			// Verify no extra files were copied
 			var copiedFiles []string
-			filepath.WalkDir(destDir, func(path string, d os.DirEntry, err error) error {
+			_ = filepath.WalkDir(destDir, func(path string, d os.DirEntry, err error) error {
 				if err != nil || d.IsDir() {
 					return err
 				}

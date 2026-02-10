@@ -25,5 +25,5 @@ func (t Substituter) Resolve(content string) (string, error) {
 		return string(match[1]), nil
 	}
 
-	return "", fmt.Errorf("Could not find a page title")
+	return "", fmt.Errorf("could not find a page title")
 }

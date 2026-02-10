@@ -55,8 +55,8 @@ func TestMemoryFileSystem_WriteFile(t *testing.T) {
 
 func TestMemoryFileSystem_WriteFile_Overwrites(t *testing.T) {
 	fs := NewMemoryFileSystem()
-	fs.WriteFile("/file.txt", []byte("first"), 0644)
-	fs.WriteFile("/file.txt", []byte("second"), 0644)
+	_ = fs.WriteFile("/file.txt", []byte("first"), 0644)
+	_ = fs.WriteFile("/file.txt", []byte("second"), 0644)
 
 	data, ok := fs.GetFile("/file.txt")
 	if !ok {

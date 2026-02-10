@@ -265,7 +265,14 @@ func TestGenerator_Validate(t *testing.T) {
 		fs := filesystem.NewMemoryFileSystem()
 		fs.AddFile("/content/page.md", []byte("# Page\n\nContent."))
 
-		g := newTestGenerator(t, "/content/page.md", "/build", "", fs)
+		config := styling.Config{
+			Elements: make(map[string]string),
+			Contexts: make(map[string]map[string]string),
+		}
+		subs := substitution.NewRegistry(nil, "")
+		vals := validation.NewRegistryWithValidators()
+		g := NewGenerator("/content/page.md", "/build", "", config, fs, subs, vals)
+
 		err := g.Generate()
 		if err != nil {
 			t.Fatalf("Generate() unexpected error: %v", err)
