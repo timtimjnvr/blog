@@ -1,68 +1,185 @@
 package content
 
 import (
-	"strings"
 	"testing"
 )
 
-func TestSubstituer_Placeholder(t *testing.T) {
-	s := NewSubstituer()
-	if got := s.Placeholder(); got != "{{content}}" {
-		t.Errorf("Placeholder() = %q, want %q", got, "{{content}}")
+type mockPathTranslater struct {
+	newPath string
+}
+
+func (m mockPathTranslater) GetNewPath(oldPath, fromPath string) (string, error) {
+	return m.newPath, nil
+}
+
+func TestConvertAssetsPath(t *testing.T) {
+	tests := []struct {
+		name     string
+		html     string
+		filePath string
+		newPath  string
+		want     string
+	}{
+		{
+			name:     "replaces relative image path",
+			html:     `<img src="images/photo.png">`,
+			filePath: "content/page.md",
+			newPath:  "assets/photo.png",
+			want:     `<img src="assets/photo.png">`,
+		},
+		{
+			name:     "preserves attributes after src",
+			html:     `<img src="images/photo.png" alt="a photo">`,
+			filePath: "content/page.md",
+			newPath:  "assets/photo.png",
+			want:     `<img src="assets/photo.png" alt="a photo">`,
+		},
+		{
+			name:     "preserves attributes before src",
+			html:     `<img alt="a photo" src="images/photo.png">`,
+			filePath: "content/page.md",
+			newPath:  "assets/photo.png",
+			want:     `<img alt="a photo" src="assets/photo.png">`,
+		},
+		{
+			name:     "skips http URL",
+			html:     `<img src="http://example.com/photo.png">`,
+			filePath: "content/page.md",
+			newPath:  "should-not-be-used",
+			want:     `<img src="http://example.com/photo.png">`,
+		},
+		{
+			name:     "skips https URL",
+			html:     `<img src="https://example.com/photo.png">`,
+			filePath: "content/page.md",
+			newPath:  "should-not-be-used",
+			want:     `<img src="https://example.com/photo.png">`,
+		},
+		{
+			name:     "skips absolute path",
+			html:     `<img src="/images/photo.png">`,
+			filePath: "content/page.md",
+			newPath:  "should-not-be-used",
+			want:     `<img src="/images/photo.png">`,
+		},
+		{
+			name:     "replaces multiple images",
+			html:     `<img src="a.png"><img src="b.png">`,
+			filePath: "content/page.md",
+			newPath:  "new.png",
+			want:     `<img src="new.png"><img src="new.png">`,
+		},
+		{
+			name:     "no img tags returns html unchanged",
+			html:     `<p>no images here</p>`,
+			filePath: "content/page.md",
+			newPath:  "unused",
+			want:     `<p>no images here</p>`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := Substituter{
+				markdownSourcePath:    tt.filePath,
+				assetsPathsTranslater: mockPathTranslater{newPath: tt.newPath},
+			}
+			got, err := s.convertAssetsPath(tt.html, tt.filePath)
+			if err != nil {
+				t.Fatalf("convertAssetsPath() unexpected error: %v", err)
+			}
+			if got != tt.want {
+				t.Errorf("convertAssetsPath() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
 
-func TestSubstituer_Resolve(t *testing.T) {
+func TestConvertMdLinksPath(t *testing.T) {
 	tests := []struct {
-		name        string
-		htmlContent string
-		contains    []string
-		notContains []string
+		name     string
+		html     string
+		filePath string
+		newPath  string
+		want     string
 	}{
 		{
-			name:        "converts md links to html links",
-			htmlContent: `<a href="other.md">Other</a>`,
-			contains:    []string{`href="other.html"`},
-			notContains: []string{`other.md`},
+			name:     "replaces relative md link",
+			html:     `<a href="posts/hello.md">Hello</a>`,
+			filePath: "index.md",
+			newPath:  "posts/hello.html",
+			want:     `<a href="posts/hello.html">Hello</a>`,
 		},
 		{
-			name:        "leaves external links unchanged",
-			htmlContent: `<a href="https://example.com">External</a>`,
-			contains:    []string{`href="https://example.com"`},
+			name:     "replaces parent relative md link",
+			html:     `<a href="../index.md">Home</a>`,
+			filePath: "posts/hello.md",
+			newPath:  "../index.html",
+			want:     `<a href="../index.html">Home</a>`,
 		},
 		{
-			name:        "leaves non-md links unchanged",
-			htmlContent: `<a href="image.png">Image</a>`,
-			contains:    []string{`href="image.png"`},
+			name:     "skips http URL",
+			html:     `<a href="http://example.com/page.md">External</a>`,
+			filePath: "index.md",
+			newPath:  "should-not-be-used",
+			want:     `<a href="http://example.com/page.md">External</a>`,
 		},
 		{
-			name:        "handles empty content",
-			htmlContent: "",
-			contains:    []string{},
+			name:     "skips https URL",
+			html:     `<a href="https://example.com/page.md">External</a>`,
+			filePath: "index.md",
+			newPath:  "should-not-be-used",
+			want:     `<a href="https://example.com/page.md">External</a>`,
 		},
 		{
-			name:        "handles content with no links",
-			htmlContent: `<p>Just text</p>`,
-			contains:    []string{"<p>Just text</p>"},
+			name:     "skips absolute path",
+			html:     `<a href="/pages/about.md">About</a>`,
+			filePath: "index.md",
+			newPath:  "should-not-be-used",
+			want:     `<a href="/pages/about.md">About</a>`,
+		},
+		{
+			name:     "ignores non-md links",
+			html:     `<a href="style.css">CSS</a>`,
+			filePath: "index.md",
+			newPath:  "should-not-be-used",
+			want:     `<a href="style.css">CSS</a>`,
+		},
+		{
+			name:     "replaces multiple md links",
+			html:     `<a href="a.md">A</a> and <a href="b.md">B</a>`,
+			filePath: "index.md",
+			newPath:  "new.html",
+			want:     `<a href="new.html">A</a> and <a href="new.html">B</a>`,
+		},
+		{
+			name:     "preserves other attributes",
+			html:     `<a class="nav" href="page.md" title="Page">Link</a>`,
+			filePath: "index.md",
+			newPath:  "page.html",
+			want:     `<a class="nav" href="page.html" title="Page">Link</a>`,
+		},
+		{
+			name:     "no links returns html unchanged",
+			html:     `<p>no links here</p>`,
+			filePath: "index.md",
+			newPath:  "unused",
+			want:     `<p>no links here</p>`,
 		},
 	}
 
-	s := NewSubstituer()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := s.Resolve(tt.htmlContent)
+			s := Substituter{
+				markdownSourcePath:  tt.filePath,
+				linksPathTranslater: mockPathTranslater{newPath: tt.newPath},
+			}
+			got, err := s.convertMdLinksPath(tt.html, tt.filePath)
 			if err != nil {
-				t.Fatalf("Resolve() unexpected error: %v", err)
+				t.Fatalf("convertMdLinksPath() unexpected error: %v", err)
 			}
-			for _, substr := range tt.contains {
-				if !strings.Contains(got, substr) {
-					t.Errorf("Resolve() result should contain %q, got %q", substr, got)
-				}
-			}
-			for _, substr := range tt.notContains {
-				if strings.Contains(got, substr) {
-					t.Errorf("Resolve() result should not contain %q, got %q", substr, got)
-				}
+			if got != tt.want {
+				t.Errorf("convertMdLinksPath() = %q, want %q", got, tt.want)
 			}
 		})
 	}

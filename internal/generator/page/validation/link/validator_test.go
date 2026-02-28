@@ -13,6 +13,7 @@ func TestNewValidator(t *testing.T) {
 	v := NewValidator()
 	if v == nil {
 		t.Fatal("NewValidator returned nil")
+		return
 	}
 	if v.Timeout != 10*time.Second {
 		t.Errorf("expected timeout 10s, got %v", v.Timeout)

@@ -1,25 +1,116 @@
 package content
 
 import (
-	"github.com/timtimjnvr/blog/internal/generator/page/markdown"
+	"fmt"
+	"path/filepath"
+	"regexp"
+	"strings"
 )
 
-// Substituter resolves {{content}} placeholder
-// it replaces links and assets with their real path in the build directory
-type Substituter struct {
+type (
+	PathTranslater interface {
+		GetNewPath(oldPath, fromPath string) (string, error)
+	}
+
+	// Substituter resolves the {{content}} template placeholder
+	// it replaces links and assets with their real path in the build directory
+	Substituter struct {
+		filePath              string
+		markdownSourcePath    string
+		assetsPathsTranslater PathTranslater
+		linksPathTranslater   PathTranslater
+	}
+)
+
+func NewSubstituer(filePath, markdownSourcePath string, assetsPathsTranslater PathTranslater, linksPathTranslater PathTranslater) Substituter {
+	return Substituter{
+		filePath:              filePath,
+		markdownSourcePath:    markdownSourcePath,
+		assetsPathsTranslater: assetsPathsTranslater,
+		linksPathTranslater:   linksPathTranslater,
+	}
 }
 
-func NewSubstituer() Substituter {
-	return Substituter{}
-
-}
-
-func (c Substituter) Placeholder() string {
+func (s Substituter) Placeholder() string {
 	return "{{content}}"
 }
 
-func (c Substituter) Resolve(htmlContent string) (string, error) {
-	htmlContent = markdown.ConvertMdLinksToHtml(htmlContent, "")
-	htmlContent = markdown.ConvertAssetPaths(htmlContent, "")
+func (s Substituter) Resolve(htmlContent string) (string, error) {
+	var err error
+	htmlContent, err = s.convertMdLinksPath(htmlContent, s.filePath)
+	if err != nil {
+		return "", fmt.Errorf("s.convertMdLinksPath err: %w", err)
+	}
+	htmlContent, err = s.convertAssetsPath(htmlContent, s.filePath)
+	if err != nil {
+		return "", fmt.Errorf("s.convertAssetsPath err: %w", err)
+	}
 	return htmlContent, nil
+}
+
+func (s Substituter) convertMdLinksPath(html string, filePath string) (string, error) {
+	// Match href attributes pointing to .md files
+	re := regexp.MustCompile(`(href=")([^"]*\.md)(")`)
+	var firstErr error
+	result := re.ReplaceAllStringFunc(html, func(match string) string {
+		submatch := re.FindStringSubmatch(match)
+		if len(submatch) < 4 {
+			return match
+		}
+
+		prefix := submatch[1]
+		src := submatch[2]
+
+		// Skip external URLs and absolute paths
+		if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") || strings.HasPrefix(src, "/") {
+			return match
+		}
+
+		// From root directory
+		fullOldPath := strings.TrimSuffix(filepath.Join(filepath.Dir(s.markdownSourcePath), src), ".md") + ".html"
+
+		newPath, err := s.linksPathTranslater.GetNewPath(fullOldPath, filePath)
+		if err != nil {
+			if firstErr == nil {
+				firstErr = err
+			}
+			return match
+		}
+		return fmt.Sprintf(`%s%s"`, prefix, newPath)
+	})
+
+	return result, firstErr
+}
+
+func (s Substituter) convertAssetsPath(html string, filePath string) (string, error) {
+	// Match img src attributes with relative paths
+	re := regexp.MustCompile(`(<img[^>]+src=")([^"]+)(")`)
+	var firstErr error
+	result := re.ReplaceAllStringFunc(html, func(match string) string {
+		submatch := re.FindStringSubmatch(match)
+		if len(submatch) < 4 {
+			return match
+		}
+
+		prefix := submatch[1]
+		src := submatch[2]
+
+		// Skip external URLs and absolute paths
+		if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") || strings.HasPrefix(src, "/") {
+			return match
+		}
+
+		// From root directory
+		fullOldPath := filepath.Join(filepath.Dir(s.markdownSourcePath), src)
+
+		newPath, err := s.assetsPathsTranslater.GetNewPath(fullOldPath, filePath)
+		if err != nil {
+			if firstErr == nil {
+				firstErr = err
+			}
+			return match
+		}
+		return fmt.Sprintf(`%s%s"`, prefix, newPath)
+	})
+	return result, firstErr
 }

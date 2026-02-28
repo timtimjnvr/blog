@@ -9,6 +9,7 @@ func TestNewValidator(t *testing.T) {
 	v := NewValidator([]string{"posts", "about"})
 	if v == nil {
 		t.Fatal("NewValidator returned nil")
+		return
 	}
 	if len(v.sections) != 2 {
 		t.Errorf("expected 2 sections, got %d", len(v.sections))

@@ -12,6 +12,7 @@ func TestNewConfig(t *testing.T) {
 
 	if config == nil {
 		t.Fatal("NewConfig returned nil")
+		return
 	}
 	if config.Elements == nil {
 		t.Error("Elements map is nil")

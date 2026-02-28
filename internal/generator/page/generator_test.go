@@ -11,42 +11,42 @@ import (
 	"github.com/timtimjnvr/blog/internal/generator/page/validation"
 )
 
-func newTestGenerator(t *testing.T, markdownPath, buildDir, sectionName string, fs *filesystem.MemoryFileSystem) *Generator {
+func newTestGenerator(t *testing.T, markdownPath, htmlOutputPath, buildDir, sectionName string, fs *filesystem.MemoryFileSystem) *Generator {
 	t.Helper()
 	config := styling.Config{
 		Elements: make(map[string]string),
 		Contexts: make(map[string]map[string]string),
 	}
-	subs := substitution.NewRegistry(nil, sectionName)
+	subs := substitution.NewRegistry(htmlOutputPath, markdownPath, nil, nil, nil, sectionName)
 	vals := validation.NewRegistry(nil)
-	return NewGenerator(markdownPath, buildDir, sectionName, config, fs, subs, vals)
+	return NewGenerator(markdownPath, htmlOutputPath, buildDir, sectionName, config, fs, subs, vals)
 }
 
 func TestNewGenerator(t *testing.T) {
 	t.Run("sets output path without section", func(t *testing.T) {
 		fs := filesystem.NewMemoryFileSystem()
-		g := newTestGenerator(t, "/content/index.md", "/build", "", fs)
+		g := newTestGenerator(t, "/content/index.md", "/build/index.html", "/build", "", fs)
 
-		if g.htmlOutputPath != "/build/index.html" {
-			t.Errorf("htmlOutputPath = %q, want %q", g.htmlOutputPath, "/build/index.html")
+		if g.destinationHTMLPath != "/build/index.html" {
+			t.Errorf("htmlOutputPath = %q, want %q", g.destinationHTMLPath, "/build/index.html")
 		}
 	})
 
 	t.Run("sets output path with section", func(t *testing.T) {
 		fs := filesystem.NewMemoryFileSystem()
-		g := newTestGenerator(t, "/content/posts/hello.md", "/build", "posts", fs)
+		g := newTestGenerator(t, "/content/posts/hello.md", "/build/posts/hello.html", "/build", "posts", fs)
 
-		if g.htmlOutputPath != "/build/posts/hello.html" {
-			t.Errorf("htmlOutputPath = %q, want %q", g.htmlOutputPath, "/build/posts/hello.html")
+		if g.destinationHTMLPath != "/build/posts/hello.html" {
+			t.Errorf("htmlOutputPath = %q, want %q", g.destinationHTMLPath, "/build/posts/hello.html")
 		}
 	})
 
 	t.Run("stores all fields", func(t *testing.T) {
 		fs := filesystem.NewMemoryFileSystem()
-		g := newTestGenerator(t, "/content/page.md", "/out", "blog", fs)
+		g := newTestGenerator(t, "/content/page.md", "/out/page.html", "/out", "blog", fs)
 
-		if g.markdownPath != "/content/page.md" {
-			t.Errorf("markdownPath = %q, want %q", g.markdownPath, "/content/page.md")
+		if g.sourceMDPath != "/content/page.md" {
+			t.Errorf("markdownPath = %q, want %q", g.sourceMDPath, "/content/page.md")
 		}
 		if g.buildDir != "/out" {
 			t.Errorf("buildDir = %q, want %q", g.buildDir, "/out")
@@ -62,7 +62,7 @@ func TestGenerator_Generate(t *testing.T) {
 		fs := filesystem.NewMemoryFileSystem()
 		fs.AddFile("/content/index.md", []byte("# Hello World\n\nSome content here."))
 
-		g := newTestGenerator(t, "/content/index.md", "/build", "", fs)
+		g := newTestGenerator(t, "/content/index.md", "/build/index.html", "/build", "", fs)
 		err := g.Generate()
 		if err != nil {
 			t.Fatalf("Generate() unexpected error: %v", err)
@@ -92,7 +92,7 @@ func TestGenerator_Generate(t *testing.T) {
 		fs := filesystem.NewMemoryFileSystem()
 		fs.AddFile("/content/posts/article.md", []byte("# My Article\n\nArticle body."))
 
-		g := newTestGenerator(t, "/content/posts/article.md", "/build", "posts", fs)
+		g := newTestGenerator(t, "/content/posts/article.md", "/build/posts/article.html", "/build", "posts", fs)
 		err := g.Generate()
 		if err != nil {
 			t.Fatalf("Generate() unexpected error: %v", err)
@@ -106,7 +106,7 @@ func TestGenerator_Generate(t *testing.T) {
 
 	t.Run("returns error when markdown file not found", func(t *testing.T) {
 		fs := filesystem.NewMemoryFileSystem()
-		g := newTestGenerator(t, "/content/missing.md", "/build", "", fs)
+		g := newTestGenerator(t, "/content/missing.md", "/build/missing.html", "/build", "", fs)
 
 		err := g.Generate()
 		if err == nil {
@@ -121,7 +121,7 @@ func TestGenerator_Generate(t *testing.T) {
 		fs := filesystem.NewMemoryFileSystem()
 		fs.AddFile("/content/page.md", []byte("# Title\n\nBody text."))
 
-		g := newTestGenerator(t, "/content/page.md", "/build", "", fs)
+		g := newTestGenerator(t, "/content/page.md", "/build/page.html", "/build", "", fs)
 		err := g.Generate()
 		if err != nil {
 			t.Fatalf("Generate() unexpected error: %v", err)
@@ -138,7 +138,7 @@ func TestGenerator_Generate_MkdirAllError(t *testing.T) {
 	fs.AddFile("/content/page.md", []byte("# Title\n\nContent."))
 	fs.MkdirAllErr = fmt.Errorf("permission denied")
 
-	g := newTestGenerator(t, "/content/page.md", "/build", "", fs)
+	g := newTestGenerator(t, "/content/page.md", "/build/page.html", "/build", "", fs)
 
 	err := g.Generate()
 	if err == nil {
@@ -154,7 +154,7 @@ func TestGenerator_Generate_WriteFileError(t *testing.T) {
 	fs.AddFile("/content/page.md", []byte("# Title\n\nContent."))
 	fs.WriteFileErr = fmt.Errorf("disk full")
 
-	g := newTestGenerator(t, "/content/page.md", "/build", "", fs)
+	g := newTestGenerator(t, "/content/page.md", "/build/page.html", "/build", "", fs)
 
 	err := g.Generate()
 	if err == nil {
@@ -174,9 +174,9 @@ func TestGenerator_Generate_SubstitutionError(t *testing.T) {
 		Elements: make(map[string]string),
 		Contexts: make(map[string]map[string]string),
 	}
-	subs := substitution.NewRegistry(nil, "")
+	subs := substitution.NewRegistry("/build/notitle.html", "/content/notitle.md", nil, nil, nil, "")
 	vals := validation.NewRegistry(nil)
-	g := NewGenerator("/content/notitle.md", "/build", "", config, fs, subs, vals)
+	g := NewGenerator("/content/notitle.md", "/build/notitle.html", "/build", "", config, fs, subs, vals)
 
 	err := g.Generate()
 	if err == nil {
@@ -196,9 +196,9 @@ func TestGenerator_Generate_NavigationBar(t *testing.T) {
 			Elements: make(map[string]string),
 			Contexts: make(map[string]map[string]string),
 		}
-		subs := substitution.NewRegistry([]string{"posts", "about"}, "")
+		subs := substitution.NewRegistry("/build/index.html", "/content/index.md", nil, nil, []string{"posts", "about"}, "")
 		vals := validation.NewRegistry(nil)
-		g := NewGenerator("/content/index.md", "/build", "", config, fs, subs, vals)
+		g := NewGenerator("/content/index.md", "/build/index.html", "/build", "", config, fs, subs, vals)
 
 		err := g.Generate()
 		if err != nil {
@@ -233,9 +233,9 @@ func TestGenerator_Generate_NavigationBar(t *testing.T) {
 			Elements: make(map[string]string),
 			Contexts: make(map[string]map[string]string),
 		}
-		subs := substitution.NewRegistry([]string{"posts", "about"}, "posts")
+		subs := substitution.NewRegistry("/build/posts/hello.html", "/content/posts/hello.md", nil, nil, []string{"posts", "about"}, "posts")
 		vals := validation.NewRegistry(nil)
-		g := NewGenerator("/content/posts/hello.md", "/build", "posts", config, fs, subs, vals)
+		g := NewGenerator("/content/posts/hello.md", "/build/posts/hello.html", "/build", "posts", config, fs, subs, vals)
 
 		err := g.Generate()
 		if err != nil {
@@ -269,9 +269,9 @@ func TestGenerator_Validate(t *testing.T) {
 			Elements: make(map[string]string),
 			Contexts: make(map[string]map[string]string),
 		}
-		subs := substitution.NewRegistry(nil, "")
+		subs := substitution.NewRegistry("/build/page.html", "/content/page.md", nil, nil, nil, "")
 		vals := validation.NewRegistryWithValidators()
-		g := NewGenerator("/content/page.md", "/build", "", config, fs, subs, vals)
+		g := NewGenerator("/content/page.md", "/build/page.html", "/build", "", config, fs, subs, vals)
 
 		err := g.Generate()
 		if err != nil {

@@ -15,9 +15,9 @@ type Registry struct {
 }
 
 // NewRegistry creates a new substitution registry with default substituters
-func NewRegistry(sections []string, currentSection string) *Registry {
+func NewRegistry(filePath, markdownSourcePath string, assetsPathTranslater, markdownPathTranslater content.PathTranslater, sections []string, currentSection string) *Registry {
 	return NewRegistryWithSubstituters(
-		content.NewSubstituer(),
+		content.NewSubstituer(filePath, markdownSourcePath, assetsPathTranslater, markdownPathTranslater),
 		title.NewSubstituer(),
 		navigation.NewSubstituer(sections, currentSection),
 	)

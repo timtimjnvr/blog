@@ -228,6 +228,7 @@ func TestNewTransformer_NilConfig(t *testing.T) {
 
 	if transformer == nil {
 		t.Fatal("NewTransformer returned nil")
+		return
 	}
 	if transformer.config == nil {
 		t.Error("transformer.config should not be nil")

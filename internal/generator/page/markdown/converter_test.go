@@ -11,6 +11,7 @@ func TestNewConverter(t *testing.T) {
 	converter := NewConverter(nil, "")
 	if converter == nil {
 		t.Fatal("NewConverter returned nil")
+		return
 	}
 	if converter.md == nil {
 		t.Fatal("converter.md is nil")

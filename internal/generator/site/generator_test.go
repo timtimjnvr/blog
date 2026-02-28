@@ -7,8 +7,40 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/timtimjnvr/blog/internal/generator/page/styling"
 )
+
+// Generator test helpers
+func (g *Generator) withPageGeneratorFactory(factory pageGeneratorFactory) *Generator {
+	g.pageGeneratorFactory = factory
+	return g
+}
+
+func (g *Generator) withContentDir(dir string) *Generator {
+	g.contentDir = dir
+	return g
+}
+
+func (g *Generator) withBuildDir(dir string) *Generator {
+	g.buildDir = dir
+	return g
+}
+
+func (g *Generator) withAssetsDir(dir string) *Generator {
+	g.assetsDir = dir
+	return g
+}
+
+func (g *Generator) withScriptsDir(dir string) *Generator {
+	g.scriptsDir = dir
+	return g
+}
+
+func (g *Generator) withStylingConfigPath(path string) *Generator {
+	g.optionalStylingConfigPath = path
+	return g
+}
 
 func setupTestContent(t *testing.T, files map[string]string) (contentDir, buildDir string) {
 	t.Helper()
@@ -29,31 +61,31 @@ func setupTestContent(t *testing.T, files map[string]string) (contentDir, buildD
 }
 
 func createTestGenerator(contentDir, buildDir string) *Generator {
-	return NewGenerator().
-		WithContentDir(contentDir).
-		WithBuildDir(buildDir).
-		WithStylingConfigPath("")
+	g, _ := NewGenerator()
+	g.withContentDir(contentDir).
+		withBuildDir(buildDir).
+		withStylingConfigPath("")
+	return g
 }
 
 func TestNewGenerator(t *testing.T) {
-	g := NewGenerator()
-	if g == nil {
-		t.Fatal("NewGenerator() returned nil")
+	g, err := NewGenerator()
+	assert.Nil(t, err)
+	if g.contentDir != "./content/markdown" {
+		t.Errorf("contentDir = %q, want %q", g.contentDir, "./content/markdown")
 	}
-	if g.contentDir != "content/markdown" {
-		t.Errorf("contentDir = %q, want %q", g.contentDir, "content/markdown")
+	if g.buildDir != "./target/build" {
+		t.Errorf("buildDir = %q, want %q", g.buildDir, "./target/build")
 	}
-	if g.buildDir != "target/build" {
-		t.Errorf("buildDir = %q, want %q", g.buildDir, "target/build")
+	if g.assetsDir != "./content/assets" {
+		t.Errorf("assetsDir = %q, want %q", g.assetsDir, "./content/assets")
 	}
-	if g.assetsDir != "content/assets" {
-		t.Errorf("assetsDir = %q, want %q", g.assetsDir, "content/assets")
+	if g.scriptsDir != "./scripts" {
+		t.Errorf("scriptsDir = %q, want %q", g.scriptsDir, "./scripts")
 	}
-	if g.scriptsDir != "scripts" {
-		t.Errorf("scriptsDir = %q, want %q", g.scriptsDir, "scripts")
-	}
-	if g.optionalStylingConfigPath != "styles/styles.json" {
-		t.Errorf("optionalStylingConfigPath = %q, want %q", g.optionalStylingConfigPath, "styles/styles.json")
+
+	if g.optionalStylingConfigPath != "./styles/styles.json" {
+		t.Errorf("optionalStylingConfigPath = %q, want %q", g.optionalStylingConfigPath, "./styles/styles.json")
 	}
 	if g.pageGeneratorFactory == nil {
 		t.Error("pageGeneratorFactory should not be nil")
@@ -61,12 +93,12 @@ func TestNewGenerator(t *testing.T) {
 }
 
 func TestWithBuilders(t *testing.T) {
-	g := NewGenerator().
-		WithContentDir("/content").
-		WithBuildDir("/build").
-		WithAssetsDir("/assets").
-		WithScriptsDir("/scripts").
-		WithStylingConfigPath("/styles.json")
+	g, _ := NewGenerator()
+	g.withContentDir("/content").
+		withBuildDir("/build").
+		withAssetsDir("/assets").
+		withScriptsDir("/scripts").
+		withStylingConfigPath("/styles.json")
 
 	if g.contentDir != "/content" {
 		t.Errorf("contentDir = %q, want %q", g.contentDir, "/content")
@@ -87,13 +119,14 @@ func TestWithBuilders(t *testing.T) {
 
 func TestWithPageGeneratorFactory(t *testing.T) {
 	called := false
-	factory := func(markdownPath, buildDir, section string, stylingConfig *styling.Config, sections []string) PageGenerator {
+	factory := func(markdownPath, htmlOutPath, buildDir, section string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []string) PageGenerator {
 		called = true
 		return &fakePageGenerator{}
 	}
 
-	g := NewGenerator().WithPageGeneratorFactory(factory)
-	g.pageGeneratorFactory("test.md", "/build", "", nil, nil)
+	g, _ := NewGenerator()
+	g.withPageGeneratorFactory(factory)
+	g.pageGeneratorFactory("test.md", "test.html", "/build", "", newPathResolver{}, newPathResolver{}, nil, nil)
 
 	if !called {
 		t.Error("custom factory should have been called")
@@ -179,7 +212,7 @@ func TestGenerate_LoadStylingConfigError(t *testing.T) {
 	styleConfigPath := filepath.Join(t.TempDir(), "bad-styles.json")
 	_ = os.WriteFile(styleConfigPath, []byte(`{"elements": {"bad_key": "class"}}`), 0644)
 
-	gen := createTestGenerator(contentDir, buildDir).WithStylingConfigPath(styleConfigPath)
+	gen := createTestGenerator(contentDir, buildDir).withStylingConfigPath(styleConfigPath)
 	err := gen.Generate()
 	if err == nil {
 		t.Fatal("expected error for invalid styling config")
@@ -192,8 +225,8 @@ func TestGenerate_LoadStylingConfigError(t *testing.T) {
 func TestGenerate_NonExistentContentDirError(t *testing.T) {
 	buildDir := t.TempDir()
 	gen := createTestGenerator("/nonexistent/content", buildDir).
-		WithAssetsDir("/nonexistent/assets").
-		WithScriptsDir("/nonexistent/scripts")
+		withAssetsDir("/nonexistent/assets").
+		withScriptsDir("/nonexistent/scripts")
 
 	err := gen.Generate()
 	if err == nil {
@@ -208,8 +241,8 @@ func TestGenerate_NonMdFilesReportError(t *testing.T) {
 	})
 
 	gen := createTestGenerator(contentDir, buildDir).
-		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
-		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
+		withAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
+		withScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
 
 	// Create empty assets/scripts dirs so copyDir doesn't fail
 	_ = os.MkdirAll(gen.assetsDir, 0755)
@@ -229,14 +262,14 @@ func TestGenerate_PageGeneratorError(t *testing.T) {
 		"index.md": "# Title",
 	})
 
-	factory := func(markdownPath, buildDir, section string, stylingConfig *styling.Config, sections []string) PageGenerator {
+	factory := func(markdownPath, htmlOutPath, buildDir, section string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []string) PageGenerator {
 		return &fakePageGenerator{generateErr: fmt.Errorf("page generation failed")}
 	}
 
 	gen := createTestGenerator(contentDir, buildDir).
-		WithPageGeneratorFactory(factory).
-		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
-		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
+		withPageGeneratorFactory(factory).
+		withAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
+		withScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
 	_ = os.MkdirAll(gen.assetsDir, 0755)
 	_ = os.MkdirAll(gen.scriptsDir, 0755)
 
@@ -249,23 +282,27 @@ func TestGenerate_PageGeneratorError(t *testing.T) {
 	}
 }
 
-func TestGenerate_ValidationError(t *testing.T) {
+func TestValidate_ValidationError(t *testing.T) {
 	contentDir, buildDir := setupTestContent(t, map[string]string{
 		"index.md": "# Title",
 	})
 
-	factory := func(markdownPath, buildDir, section string, stylingConfig *styling.Config, sections []string) PageGenerator {
+	factory := func(markdownPath, htmlOutPath, buildDir, section string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []string) PageGenerator {
 		return &fakePageGenerator{validateErr: fmt.Errorf("validation failed")}
 	}
 
 	gen := createTestGenerator(contentDir, buildDir).
-		WithPageGeneratorFactory(factory).
-		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
-		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
+		withPageGeneratorFactory(factory).
+		withAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
+		withScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
 	_ = os.MkdirAll(gen.assetsDir, 0755)
 	_ = os.MkdirAll(gen.scriptsDir, 0755)
 
-	err := gen.Generate()
+	if err := gen.Generate(); err != nil {
+		t.Fatalf("unexpected error during generation: %v", err)
+	}
+
+	err := gen.Validate()
 	if err == nil {
 		t.Fatal("expected error when validation fails")
 	}
@@ -275,7 +312,7 @@ func TestGenerate_ValidationError(t *testing.T) {
 }
 
 func TestValidate_NoPages(t *testing.T) {
-	g := NewGenerator()
+	g, _ := NewGenerator()
 	err := g.Validate()
 	if err != nil {
 		t.Errorf("Validate() with no pages should return nil, got %v", err)
@@ -283,19 +320,26 @@ func TestValidate_NoPages(t *testing.T) {
 }
 
 func TestValidate_AllPass(t *testing.T) {
-	g := NewGenerator()
-	g.pagesGenerators = []PageGenerator{
-		&fakePageGenerator{},
-		&fakePageGenerator{},
-	}
+	g, _ := NewGenerator()
+	pg1 := &fakePageGenerator{}
+	pg2 := &fakePageGenerator{}
+	pg3 := &fakePageGenerator{}
+	g.pagesGenerators = []PageGenerator{pg1, pg2, pg3}
+
 	err := g.Validate()
 	if err != nil {
 		t.Errorf("Validate() unexpected error: %v", err)
 	}
+
+	for i, pg := range []*fakePageGenerator{pg1, pg2, pg3} {
+		if !pg.validated {
+			t.Errorf("Validate() was not called on page generator %d", i)
+		}
+	}
 }
 
 func TestValidate_WithErrors(t *testing.T) {
-	g := NewGenerator()
+	g, _ := NewGenerator()
 	g.pagesGenerators = []PageGenerator{
 		&fakePageGenerator{},
 		&fakePageGenerator{validateErr: fmt.Errorf("broken link")},
@@ -322,8 +366,8 @@ func TestIntegration_BasicSiteGeneration(t *testing.T) {
 	})
 
 	gen := createTestGenerator(contentDir, buildDir).
-		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
-		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
+		withAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
+		withScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
 	_ = os.MkdirAll(gen.assetsDir, 0755)
 	_ = os.MkdirAll(gen.scriptsDir, 0755)
 
@@ -358,8 +402,8 @@ func TestIntegration_ScriptsCopied(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(scriptsDir, "test.js"), []byte(scriptContent), 0644)
 
 	gen := createTestGenerator(contentDir, buildDir).
-		WithScriptsDir(scriptsDir).
-		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets"))
+		withScriptsDir(scriptsDir).
+		withAssetsDir(filepath.Join(t.TempDir(), "empty-assets"))
 	_ = os.MkdirAll(gen.assetsDir, 0755)
 
 	err := gen.Generate()
@@ -391,8 +435,8 @@ func TestIntegration_DarkModeScriptCopied(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(scriptsDir, "dark-mode.js"), []byte(darkModeScript), 0644)
 
 	gen := createTestGenerator(contentDir, buildDir).
-		WithScriptsDir(scriptsDir).
-		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets"))
+		withScriptsDir(scriptsDir).
+		withAssetsDir(filepath.Join(t.TempDir(), "empty-assets"))
 	_ = os.MkdirAll(gen.assetsDir, 0755)
 
 	err := gen.Generate()
@@ -417,8 +461,8 @@ func TestIntegration_LinkConversion(t *testing.T) {
 	})
 
 	gen := createTestGenerator(contentDir, buildDir).
-		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
-		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
+		withAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
+		withScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
 	_ = os.MkdirAll(gen.assetsDir, 0755)
 	_ = os.MkdirAll(gen.scriptsDir, 0755)
 
@@ -453,8 +497,8 @@ func TestIntegration_StaticAssetsCopied(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(assetsDir, "images/bg.png"), []byte("fake png data"), 0644)
 
 	gen := createTestGenerator(contentDir, buildDir).
-		WithAssetsDir(assetsDir).
-		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
+		withAssetsDir(assetsDir).
+		withScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
 	_ = os.MkdirAll(gen.scriptsDir, 0755)
 
 	err := gen.Generate()
@@ -482,8 +526,8 @@ func TestIntegration_TitleExtraction(t *testing.T) {
 	})
 
 	gen := createTestGenerator(contentDir, buildDir).
-		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
-		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
+		withAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
+		withScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
 	_ = os.MkdirAll(gen.assetsDir, 0755)
 	_ = os.MkdirAll(gen.scriptsDir, 0755)
 
@@ -519,9 +563,9 @@ func TestIntegration_StyleConfigApplied(t *testing.T) {
 	}`), 0644)
 
 	gen := createTestGenerator(contentDir, buildDir).
-		WithStylingConfigPath(styleConfigPath).
-		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
-		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
+		withStylingConfigPath(styleConfigPath).
+		withAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
+		withScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
 	_ = os.MkdirAll(gen.assetsDir, 0755)
 	_ = os.MkdirAll(gen.scriptsDir, 0755)
 
@@ -556,8 +600,8 @@ func TestIntegration_InlineAttributesWithoutConfig(t *testing.T) {
 	})
 
 	gen := createTestGenerator(contentDir, buildDir).
-		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
-		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
+		withAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
+		withScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
 	_ = os.MkdirAll(gen.assetsDir, 0755)
 	_ = os.MkdirAll(gen.scriptsDir, 0755)
 
@@ -592,8 +636,8 @@ func TestIntegration_NavigationBar(t *testing.T) {
 	})
 
 	gen := createTestGenerator(contentDir, buildDir).
-		WithAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
-		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
+		withAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
+		withScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
 	_ = os.MkdirAll(gen.assetsDir, 0755)
 	_ = os.MkdirAll(gen.scriptsDir, 0755)
 
@@ -723,19 +767,30 @@ func TestIntegration_NavigationBar(t *testing.T) {
 }
 
 func TestIntegration_AssetPathConversion(t *testing.T) {
-	contentDir, buildDir := setupTestContent(t, map[string]string{
+	// Use a shared root so that relative paths from markdown to assets resolve correctly
+	rootDir := t.TempDir()
+	contentDir := filepath.Join(rootDir, "content", "markdown")
+	assetsDir := filepath.Join(rootDir, "content", "assets")
+	buildDir := filepath.Join(rootDir, "target", "build")
+
+	// Create content files
+	for path, content := range map[string]string{
 		"index.md":             "# Home\n\nWelcome.\n",
 		"posts/index.md":       "# Posts\n\nArticle list.\n",
 		"posts/second-post.md": "# Second Post\n\nContent.\n\n![Image](../../assets/images/photo.png)\n",
-	})
+	} {
+		fullPath := filepath.Join(contentDir, path)
+		_ = os.MkdirAll(filepath.Dir(fullPath), 0755)
+		_ = os.WriteFile(fullPath, []byte(content), 0644)
+	}
 
-	assetsDir := t.TempDir()
+	// Create asset files
 	_ = os.MkdirAll(filepath.Join(assetsDir, "images"), 0755)
 	_ = os.WriteFile(filepath.Join(assetsDir, "images/photo.png"), []byte("fake png data"), 0644)
 
 	gen := createTestGenerator(contentDir, buildDir).
-		WithAssetsDir(assetsDir).
-		WithScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
+		withAssetsDir(assetsDir).
+		withScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
 	_ = os.MkdirAll(gen.scriptsDir, 0755)
 
 	err := gen.Generate()

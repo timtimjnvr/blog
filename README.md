@@ -24,34 +24,36 @@ task generate
 
 The generated site will be in the `target/build/` directory.
 
+## Available Tasks
+
+Run `task --list` to see all available tasks.
+
+## Development
+
+```bash
+# Full validation before committing
+task validate
+
+# Generate and preview site locally
+task dev
+
+# Generate, serve, and watch for changes
+task dev:watch
+```
+
 ## Project Structure
 
 ```
 blog/
-├── main.go                      # Entry point
-├── styles/
-│   ├── input.css                # Tailwind CSS input file
-│   └── styles.json              # Optional custom styling configuration
-├── internal/
-│   ├── context/                 # Page context interface and implementation
-│   ├── generator/               # Site generation
-│   │   ├── generator.go         # Main generation logic
-│   │   └── page.html            # Embedded HTML template
-│   ├── markdown/                # Markdown processing
-│   │   ├── converter.go         # Goldmark wrapper with styling support
-│   │   └── links.go             # Link conversion and path resolution
-│   ├── styling/                 # CSS styling system
-│   ├── substitution/            # Template substitution system
-│   │   ├── registry.go          # Generic registry for substitutions
-│   │   ├── title.go             # {{title}} substitution
-│   │   └── content.go           # {{content}} substitution
-│   └── validator/               # Post-generation validation
+├── main.go
+├── styles/                      # Tailwind CSS input and optional styling config
 ├── scripts/                     # JavaScript files
+├── internal/
+│   └── generator/
+│       ├── page/                # Page generation (markdown, substitution, validation, styling)
+│       └── site/                # Site-level generation (routing, asset copying)
 ├── content/
 │   ├── markdown/                # Markdown source files
-│   │   ├── index.md             # Homepage (becomes index.html)
-│   │   ├── about/               # About section
-│   │   └── posts/               # Blog posts
 │   └── assets/                  # Static assets (images, etc.)
 └── target/build/                # Generated output
 ```
@@ -65,14 +67,20 @@ Markdown Files (content/markdown/)
     │
     ▼
 ┌─────────────────────────────────────────────────────────┐
-│  Generator                                              │
-│  ├─ Markdown Converter (Goldmark + GFM)                 │
-│  │   └─ Style Transformer (optional CSS class injection)│
-│  ├─ Substitution Registry                               │
-│  │   ├─ {{title}} → First H1 from markdown              │
-│  │   └─ {{content}} → Converted HTML with fixed links   │
-│  └─ Validators                                          │
-│      └─ Image Validator (checks local/remote images)    │
+│  Site Generator                                         │
+│  ├─ List sections (top-level dirs in content/markdown/) │
+│  ├─ Copy assets & scripts                               │
+│  └─ For each .md file → Page Generator                  │
+│      ├─ Markdown Converter (Goldmark + GFM)             │
+│      │   └─ Style Transformer (optional)                │
+│      ├─ Substitution Registry                           │
+│      │   ├─ {{title}} → First H1 from markdown          │
+│      │   ├─ {{content}} → Converted HTML                │
+│      │   └─ {{navigation}} → Auto-generated nav bar     │
+│      └─ Validators                                      │
+│          ├─ Link Validator                              │
+│          ├─ Image Validator                             │
+│          └─ Navigation Validator                        │
 └─────────────────────────────────────────────────────────┘
     │
     ▼
@@ -111,20 +119,3 @@ CSS is built using the Tailwind Standalone CLI. Configuration is done in `styles
   * Validation: Invalid keys cause the generator to exit with an error listing valid options.
 
 * **Inline attributes**: For precise control on specific elements, use the inline attribute syntax directly in Markdown (take precedence over `styles.json`).
-
-## Available Tasks
-
-Run `task --list` to see all available tasks.
-
-## Development
-
-```bash
-# Full validation before committing
-task validate
-
-# Generate and preview site locally
-task dev
-
-# Generate, serve, and watch for changes
-task dev:watch
-```
