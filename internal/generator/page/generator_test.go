@@ -9,6 +9,7 @@ import (
 	"github.com/timtimjnvr/blog/internal/generator/page/styling"
 	"github.com/timtimjnvr/blog/internal/generator/page/substitution"
 	"github.com/timtimjnvr/blog/internal/generator/page/validation"
+	"github.com/timtimjnvr/blog/internal/generator/section"
 )
 
 func newTestGenerator(t *testing.T, markdownPath, htmlOutputPath, buildDir, sectionName string, fs *filesystem.MemoryFileSystem) *Generator {
@@ -196,7 +197,7 @@ func TestGenerator_Generate_NavigationBar(t *testing.T) {
 			Elements: make(map[string]string),
 			Contexts: make(map[string]map[string]string),
 		}
-		subs := substitution.NewRegistry("/build/index.html", "/content/index.md", nil, nil, []string{"posts", "about"}, "")
+		subs := substitution.NewRegistry("/build/index.html", "/content/index.md", nil, nil, []section.Section{{DirName: "", DisplayName: "Accueil"}, {DirName: "posts", DisplayName: "Posts"}, {DirName: "about", DisplayName: "About"}}, "")
 		vals := validation.NewRegistry(nil)
 		g := NewGenerator("/content/index.md", "/build/index.html", "/build", "", config, fs, subs, vals)
 
@@ -233,7 +234,7 @@ func TestGenerator_Generate_NavigationBar(t *testing.T) {
 			Elements: make(map[string]string),
 			Contexts: make(map[string]map[string]string),
 		}
-		subs := substitution.NewRegistry("/build/posts/hello.html", "/content/posts/hello.md", nil, nil, []string{"posts", "about"}, "posts")
+		subs := substitution.NewRegistry("/build/posts/hello.html", "/content/posts/hello.md", nil, nil, []section.Section{{DirName: "", DisplayName: "Accueil"}, {DirName: "posts", DisplayName: "Posts"}, {DirName: "about", DisplayName: "About"}}, "posts")
 		vals := validation.NewRegistry(nil)
 		g := NewGenerator("/content/posts/hello.md", "/build/posts/hello.html", "/build", "posts", config, fs, subs, vals)
 

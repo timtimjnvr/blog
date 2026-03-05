@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/timtimjnvr/blog/internal/generator/page/styling"
+	"github.com/timtimjnvr/blog/internal/generator/section"
 )
 
 // Generator test helpers
@@ -119,7 +120,7 @@ func TestWithBuilders(t *testing.T) {
 
 func TestWithPageGeneratorFactory(t *testing.T) {
 	called := false
-	factory := func(markdownPath, htmlOutPath, buildDir, section string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []string) PageGenerator {
+	factory := func(markdownPath, htmlOutPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []section.Section) PageGenerator {
 		called = true
 		return &fakePageGenerator{}
 	}
@@ -203,6 +204,78 @@ func (f *fakePageGenerator) Validate() error {
 	return f.validateErr
 }
 
+func TestListSections_ReadsDisplayNameFromIndexMd(t *testing.T) {
+	contentDir, _ := setupTestContent(t, map[string]string{
+		"index.md":       "# Accueil\n",
+		"posts/index.md": "# All Articles\n\nContent.\n",
+		"about/index.md": "# About Me\n\nInfo.\n",
+	})
+
+	g, _ := NewGenerator()
+	g.withContentDir(contentDir)
+
+	if err := g.listSections(); err != nil {
+		t.Fatalf("listSections() error = %v", err)
+	}
+
+	// home + posts + about
+	if len(g.sections) != 3 {
+		t.Fatalf("expected 3 sections (home + 2), got %d", len(g.sections))
+	}
+
+	for _, s := range g.sections {
+		switch s.DirName {
+		case "":
+			if s.DisplayName != "Accueil" {
+				t.Errorf("home section DisplayName = %q, want %q", s.DisplayName, "Accueil")
+			}
+		case "posts":
+			if s.DisplayName != "All Articles" {
+				t.Errorf("posts section DisplayName = %q, want %q", s.DisplayName, "All Articles")
+			}
+		case "about":
+			if s.DisplayName != "About Me" {
+				t.Errorf("about section DisplayName = %q, want %q", s.DisplayName, "About Me")
+			}
+		default:
+			t.Errorf("unexpected section %q", s.DirName)
+		}
+	}
+}
+
+func TestListSections_FallbackToDirectoryName(t *testing.T) {
+	contentDir, _ := setupTestContent(t, map[string]string{
+		"index.md": "# Accueil\n",
+		// posts/ has no index.md
+		"posts/hello.md": "# Hello\n",
+	})
+
+	g, _ := NewGenerator()
+	g.withContentDir(contentDir)
+
+	if err := g.listSections(); err != nil {
+		t.Fatalf("listSections() error = %v", err)
+	}
+
+	// home + posts
+	if len(g.sections) != 2 {
+		t.Fatalf("expected 2 sections (home + posts), got %d", len(g.sections))
+	}
+
+	// First section is home
+	if g.sections[0].DirName != "" {
+		t.Errorf("first section DirName = %q, want empty string (home)", g.sections[0].DirName)
+	}
+
+	// Second section is posts with fallback display name
+	if g.sections[1].DirName != "posts" {
+		t.Errorf("DirName = %q, want %q", g.sections[1].DirName, "posts")
+	}
+	if g.sections[1].DisplayName != "Posts" {
+		t.Errorf("DisplayName = %q, want %q (fallback to capitalized dir name)", g.sections[1].DisplayName, "Posts")
+	}
+}
+
 func TestGenerate_LoadStylingConfigError(t *testing.T) {
 	contentDir, buildDir := setupTestContent(t, map[string]string{
 		"index.md": "# Title",
@@ -262,7 +335,7 @@ func TestGenerate_PageGeneratorError(t *testing.T) {
 		"index.md": "# Title",
 	})
 
-	factory := func(markdownPath, htmlOutPath, buildDir, section string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []string) PageGenerator {
+	factory := func(markdownPath, htmlOutPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []section.Section) PageGenerator {
 		return &fakePageGenerator{generateErr: fmt.Errorf("page generation failed")}
 	}
 
@@ -287,7 +360,7 @@ func TestValidate_ValidationError(t *testing.T) {
 		"index.md": "# Title",
 	})
 
-	factory := func(markdownPath, htmlOutPath, buildDir, section string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []string) PageGenerator {
+	factory := func(markdownPath, htmlOutPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []section.Section) PageGenerator {
 		return &fakePageGenerator{validateErr: fmt.Errorf("validation failed")}
 	}
 
@@ -629,7 +702,7 @@ func TestIntegration_InlineAttributesWithoutConfig(t *testing.T) {
 
 func TestIntegration_NavigationBar(t *testing.T) {
 	contentDir, buildDir := setupTestContent(t, map[string]string{
-		"index.md":            "# Home\n\nWelcome.\n",
+		"index.md":            "# Accueil\n\nWelcome.\n",
 		"posts/index.md":      "# Posts\n\nArticle list.\n",
 		"posts/first-post.md": "# First Post\n\nContent.\n",
 		"about/index.md":      "# About\n\nAbout page.\n",

@@ -7,6 +7,7 @@ import (
 	"github.com/timtimjnvr/blog/internal/generator/page/substitution/content"
 	"github.com/timtimjnvr/blog/internal/generator/page/substitution/navigation"
 	"github.com/timtimjnvr/blog/internal/generator/page/substitution/title"
+	"github.com/timtimjnvr/blog/internal/generator/section"
 )
 
 // Registry manages substitutions and applies them to templates
@@ -15,7 +16,7 @@ type Registry struct {
 }
 
 // NewRegistry creates a new substitution registry with default substituters
-func NewRegistry(filePath, markdownSourcePath string, assetsPathTranslater, markdownPathTranslater content.PathTranslater, sections []string, currentSection string) *Registry {
+func NewRegistry(filePath, markdownSourcePath string, assetsPathTranslater, markdownPathTranslater content.PathTranslater, sections []section.Section, currentSection string) *Registry {
 	return NewRegistryWithSubstituters(
 		content.NewSubstituer(filePath, markdownSourcePath, assetsPathTranslater, markdownPathTranslater),
 		title.NewSubstituer(),

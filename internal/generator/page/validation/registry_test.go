@@ -3,6 +3,8 @@ package validation
 import (
 	"strings"
 	"testing"
+
+	"github.com/timtimjnvr/blog/internal/generator/section"
 )
 
 // fakeValidator is a test double implementing Validator
@@ -15,7 +17,12 @@ func (f fakeValidator) Validate(htmlPath, buildDir string, content []byte) []err
 }
 
 func TestNewRegistry(t *testing.T) {
-	r := NewRegistry([]string{"posts", "about"})
+	sections := []section.Section{
+		{DirName: "", DisplayName: "Accueil"},
+		{DirName: "posts", DisplayName: "Posts"},
+		{DirName: "about", DisplayName: "About"},
+	}
+	r := NewRegistry(sections)
 	if r == nil {
 		t.Fatal("NewRegistry() returned nil")
 		return
@@ -37,7 +44,7 @@ func TestNewRegistryWithValidators(t *testing.T) {
 }
 
 func TestNewDefaultRegistry(t *testing.T) {
-	r := NewDefaultRegistry([]string{"posts"})
+	r := NewDefaultRegistry([]section.Section{{DirName: "", DisplayName: "Accueil"}, {DirName: "posts", DisplayName: "Posts"}})
 	if r == nil {
 		t.Fatal("NewDefaultRegistry() returned nil")
 		return

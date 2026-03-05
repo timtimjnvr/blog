@@ -12,6 +12,7 @@ import (
 	"github.com/timtimjnvr/blog/internal/generator/page/styling"
 	"github.com/timtimjnvr/blog/internal/generator/page/substitution"
 	"github.com/timtimjnvr/blog/internal/generator/page/validation"
+	"github.com/timtimjnvr/blog/internal/generator/section"
 )
 
 type (
@@ -20,7 +21,7 @@ type (
 		Validate() error
 	}
 
-	pageGeneratorFactory func(sourceMDPath, destinationHTMLPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []string) PageGenerator
+	pageGeneratorFactory func(sourceMDPath, destinationHTMLPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []section.Section) PageGenerator
 )
 
 // Generator is the site generator which allows to generate and validate the site
@@ -34,7 +35,7 @@ type Generator struct {
 	scriptsDir                string
 	scriptsOutDir             string
 	pageGeneratorFactory      pageGeneratorFactory
-	sectionDirectoryNames     []string
+	sections                  []section.Section
 	pagesGenerators           []PageGenerator
 	stylingConfig             *styling.Config
 }
@@ -48,7 +49,7 @@ func NewGenerator() (*Generator, error) {
 		scriptsDir:                "./scripts",
 		scriptsOutDir:             "./target/build/scripts",
 		optionalStylingConfigPath: "./styles/styles.json",
-		sectionDirectoryNames:     make([]string, 0),
+		sections:                  make([]section.Section, 0),
 		pagesGenerators:           make([]PageGenerator, 0),
 		pageGeneratorFactory:      defaultPageGeneratorFactory,
 	}
@@ -99,7 +100,7 @@ func (g *Generator) Validate() error {
 	return nil
 }
 
-func defaultPageGeneratorFactory(sourceMDPath, destinationHTMLPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []string) PageGenerator {
+func defaultPageGeneratorFactory(sourceMDPath, destinationHTMLPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []section.Section) PageGenerator {
 	var config styling.Config
 	if stylingConfig != nil {
 		config = *stylingConfig
@@ -132,7 +133,6 @@ func (g *Generator) listSections() error {
 			return err
 		}
 
-		// Listing sections by directory name
 		if !info.IsDir() {
 			return nil
 		}
@@ -142,20 +142,44 @@ func (g *Generator) listSections() error {
 			return err
 		}
 
-		// Sections are only top level directories of g.ContentDir
+		// Only process top-level directories (and the root itself)
 		if strings.Contains(relPath, "/") {
 			return nil
 		}
 
-		// Skip the content directory itself
+		// Root content directory: home section has an empty DirName
 		if relPath == "." {
+			displayName := extractSectionTitle(filepath.Join(path, "index.md"), "home")
+			g.sections = append(g.sections, section.Section{
+				DirName:     "",
+				DisplayName: displayName,
+			})
 			return nil
 		}
 
-		// Section directory
-		g.sectionDirectoryNames = append(g.sectionDirectoryNames, relPath)
+		// Sub-section: read display name from # title in section's index.md
+		displayName := extractSectionTitle(filepath.Join(path, "index.md"), relPath)
+		g.sections = append(g.sections, section.Section{
+			DirName:     relPath,
+			DisplayName: displayName,
+		})
 		return nil
 	})
+}
+
+// extractSectionTitle reads the # title from the index.md of a section directory.
+// Falls back to the capitalized dirName if no index.md or no title is found.
+func extractSectionTitle(indexMDPath, dirName string) string {
+	content, err := os.ReadFile(indexMDPath)
+	if err != nil {
+		return strings.ToUpper(dirName[:1]) + dirName[1:]
+	}
+	for _, line := range strings.Split(string(content), "\n") {
+		if strings.HasPrefix(line, "# ") {
+			return strings.TrimSpace(strings.TrimPrefix(line, "# "))
+		}
+	}
+	return strings.ToUpper(dirName[:1]) + dirName[1:]
 }
 
 func (g *Generator) makeAllDirectories() error {
@@ -212,7 +236,7 @@ func (g *Generator) generatePages() error {
 		}
 
 		htmlOutputPath := filepath.Join(g.buildDir, strings.TrimSuffix(pageFilePathRelToContentDir, ".md")+".html")
-		g.pagesGenerators = append(g.pagesGenerators, g.pageGeneratorFactory(markDownFilePath, htmlOutputPath, g.buildDir, pageSection, assetsPathTranslater, linksPathTranslater, g.stylingConfig, g.sectionDirectoryNames))
+		g.pagesGenerators = append(g.pagesGenerators, g.pageGeneratorFactory(markDownFilePath, htmlOutputPath, g.buildDir, pageSection, assetsPathTranslater, linksPathTranslater, g.stylingConfig, g.sections))
 		return nil
 	})
 

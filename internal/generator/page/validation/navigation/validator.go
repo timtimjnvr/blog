@@ -4,17 +4,19 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/timtimjnvr/blog/internal/generator/section"
 )
 
 // Validator checks that the generated HTML contains a <nav> element
 // with links to all expected sections
 type Validator struct {
-	sections []string
+	sections []section.Section
 }
 
 // NewValidator creates a new navigation validator that will check
 // for the presence of nav links to all given sections plus the home page
-func NewValidator(sections []string) *Validator {
+func NewValidator(sections []section.Section) *Validator {
 	return &Validator{
 		sections: sections,
 	}
@@ -35,26 +37,24 @@ func (v *Validator) Validate(htmlPath, buildDir string, content []byte) []error 
 
 	navContent := navMatch[1]
 
-	// Check home link — match href ending with /index.html" or starting with "index.html"
-	// but not section/index.html
-	homeHrefRegex := regexp.MustCompile(`href="(\.\./)*index\.html"`)
-	if !strings.Contains(navContent, "Accueil") {
-		errs = append(errs, fmt.Errorf("%s: navigation missing home link (Accueil)", htmlPath))
-	}
-	if !homeHrefRegex.MatchString(navContent) {
-		errs = append(errs, fmt.Errorf("%s: navigation missing home href to index.html", htmlPath))
-	}
-
-	// Check each section link
-	for _, section := range v.sections {
-		expectedHref := section + "/index.html"
-		if !strings.Contains(navContent, expectedHref) {
-			errs = append(errs, fmt.Errorf("%s: navigation missing link to section %q (expected href containing %q)", htmlPath, section, expectedHref))
-		}
-
-		displayName := strings.ToUpper(section[:1]) + section[1:]
-		if !strings.Contains(navContent, displayName) {
-			errs = append(errs, fmt.Errorf("%s: navigation missing display name %q for section %q", htmlPath, displayName, section))
+	for _, s := range v.sections {
+		if s.DirName == "" {
+			// Home section: href may be prefixed with ../ depending on depth
+			homeHrefRegex := regexp.MustCompile(`href="(\.\./)*index\.html"`)
+			if !strings.Contains(navContent, s.DisplayName) {
+				errs = append(errs, fmt.Errorf("%s: navigation missing home link (%s)", htmlPath, s.DisplayName))
+			}
+			if !homeHrefRegex.MatchString(navContent) {
+				errs = append(errs, fmt.Errorf("%s: navigation missing home href to index.html", htmlPath))
+			}
+		} else {
+			expectedHref := s.DirName + "/index.html"
+			if !strings.Contains(navContent, expectedHref) {
+				errs = append(errs, fmt.Errorf("%s: navigation missing link to section %q (expected href containing %q)", htmlPath, s.DirName, expectedHref))
+			}
+			if !strings.Contains(navContent, s.DisplayName) {
+				errs = append(errs, fmt.Errorf("%s: navigation missing display name %q for section %q", htmlPath, s.DisplayName, s.DirName))
+			}
 		}
 	}
 

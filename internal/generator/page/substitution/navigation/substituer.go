@@ -3,15 +3,17 @@ package navigation
 import (
 	"fmt"
 	"strings"
+
+	"github.com/timtimjnvr/blog/internal/generator/section"
 )
 
 // Substituter resolves {{navigation}} placeholder with an auto-generated nav bar
 type Substituter struct {
-	sections       []string
+	sections       []section.Section
 	currentSection string
 }
 
-func NewSubstituer(sections []string, currentSection string) Substituter {
+func NewSubstituer(sections []section.Section, currentSection string) Substituter {
 	return Substituter{
 		sections:       sections,
 		currentSection: currentSection,
@@ -26,12 +28,18 @@ func (n Substituter) Resolve(_ string) (string, error) {
 	prefix := relativePrefix(n.currentSection)
 
 	var links []string
-	links = append(links, fmt.Sprintf(`<a href="%sindex.html" class="hover:underline">Accueil</a>`, prefix))
-
-	for _, section := range n.sections {
-		href := prefix + section + "/index.html"
-		displayName := strings.ToUpper(section[:1]) + section[1:]
-		links = append(links, fmt.Sprintf(`<a href="%s" class="hover:underline">%s</a>`, href, displayName))
+	for _, s := range n.sections {
+		var href string
+		if s.DirName == "" {
+			href = prefix + "index.html"
+		} else {
+			href = prefix + s.DirName + "/index.html"
+		}
+		class := "hover:underline"
+		if s.DirName == n.currentSection {
+			class = "font-semibold underline"
+		}
+		links = append(links, fmt.Sprintf(`<a href="%s" class="%s">%s</a>`, href, class, s.DisplayName))
 	}
 
 	return fmt.Sprintf(`<nav class="flex gap-4">%s</nav>`, strings.Join(links, "\n    ")), nil

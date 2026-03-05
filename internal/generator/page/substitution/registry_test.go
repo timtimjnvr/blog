@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/timtimjnvr/blog/internal/generator/section"
 )
 
 // fakeSubstituter is a test double implementing Substituter
@@ -18,7 +20,12 @@ func (f fakeSubstituter) Resolve(content string) (string, error) {
 }
 
 func TestNewRegistry(t *testing.T) {
-	r := NewRegistry("output.html", "source.md", nil, nil, []string{"posts", "about"}, "")
+	sections := []section.Section{
+		{DirName: "", DisplayName: "Accueil"},
+		{DirName: "posts", DisplayName: "Posts"},
+		{DirName: "about", DisplayName: "About"},
+	}
+	r := NewRegistry("output.html", "source.md", nil, nil, sections, "")
 	if r == nil {
 		t.Fatal("NewRegistry() returned nil")
 		return
@@ -153,7 +160,7 @@ func TestRegistry_Apply(t *testing.T) {
 }
 
 func TestRegistry_Apply_WithDefaultSubstituters(t *testing.T) {
-	r := NewRegistry("output.html", "source.md", nil, nil, []string{"posts"}, "")
+	r := NewRegistry("output.html", "source.md", nil, nil, []section.Section{{DirName: "", DisplayName: "Accueil"}, {DirName: "posts", DisplayName: "Posts"}}, "")
 	template := `<title>{{title}}</title><div>{{navigation}}</div><body>{{content}}</body>`
 	content := `<h1>Test Title</h1><p>Hello world</p>`
 

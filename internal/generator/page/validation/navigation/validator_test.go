@@ -3,30 +3,40 @@ package navigation
 import (
 	"strings"
 	"testing"
+
+	"github.com/timtimjnvr/blog/internal/generator/section"
 )
 
 func TestNewValidator(t *testing.T) {
-	v := NewValidator([]string{"posts", "about"})
+	v := NewValidator([]section.Section{
+		{DirName: "", DisplayName: "Accueil"},
+		{DirName: "posts", DisplayName: "Posts"},
+		{DirName: "about", DisplayName: "About"},
+	})
 	if v == nil {
 		t.Fatal("NewValidator returned nil")
 		return
 	}
-	if len(v.sections) != 2 {
-		t.Errorf("expected 2 sections, got %d", len(v.sections))
+	if len(v.sections) != 3 {
+		t.Errorf("expected 3 sections (home + 2), got %d", len(v.sections))
 	}
 }
 
 func TestValidator_Validate(t *testing.T) {
 	tests := []struct {
 		name       string
-		sections   []string
+		sections   []section.Section
 		html       string
 		wantErrors int
 		wantMsg    []string
 	}{
 		{
-			name:     "valid nav with all sections from root",
-			sections: []string{"posts", "about"},
+			name: "valid nav with all sections from root",
+			sections: []section.Section{
+				{DirName: "", DisplayName: "Accueil"},
+				{DirName: "posts", DisplayName: "Posts"},
+				{DirName: "about", DisplayName: "About"},
+			},
 			html: `<html><body>
 				<nav class="flex gap-4">
 					<a href="index.html">Accueil</a>
@@ -38,8 +48,12 @@ func TestValidator_Validate(t *testing.T) {
 			wantErrors: 0,
 		},
 		{
-			name:     "valid nav with all sections from section depth",
-			sections: []string{"posts", "about"},
+			name: "valid nav with all sections from section depth",
+			sections: []section.Section{
+				{DirName: "", DisplayName: "Accueil"},
+				{DirName: "posts", DisplayName: "Posts"},
+				{DirName: "about", DisplayName: "About"},
+			},
 			html: `<html><body>
 				<nav class="flex gap-4">
 					<a href="../index.html">Accueil</a>
@@ -52,14 +66,18 @@ func TestValidator_Validate(t *testing.T) {
 		},
 		{
 			name:       "missing nav element entirely",
-			sections:   []string{"posts"},
+			sections:   []section.Section{{DirName: "", DisplayName: "Accueil"}, {DirName: "posts", DisplayName: "Posts"}},
 			html:       `<html><body><p>No nav here</p></body></html>`,
 			wantErrors: 1,
 			wantMsg:    []string{"missing <nav> element"},
 		},
 		{
-			name:     "nav missing a section link",
-			sections: []string{"posts", "about"},
+			name: "nav missing a section link",
+			sections: []section.Section{
+				{DirName: "", DisplayName: "Accueil"},
+				{DirName: "posts", DisplayName: "Posts"},
+				{DirName: "about", DisplayName: "About"},
+			},
 			html: `<html><body>
 				<nav>
 					<a href="index.html">Accueil</a>
@@ -71,7 +89,7 @@ func TestValidator_Validate(t *testing.T) {
 		},
 		{
 			name:     "nav missing home link",
-			sections: []string{"posts"},
+			sections: []section.Section{{DirName: "", DisplayName: "Accueil"}, {DirName: "posts", DisplayName: "Posts"}},
 			html: `<html><body>
 				<nav>
 					<a href="posts/index.html">Posts</a>
@@ -82,7 +100,7 @@ func TestValidator_Validate(t *testing.T) {
 		},
 		{
 			name:     "nav with home but wrong display name",
-			sections: []string{},
+			sections: []section.Section{{DirName: "", DisplayName: "Accueil"}},
 			html: `<html><body>
 				<nav>
 					<a href="index.html">Home</a>
@@ -92,11 +110,25 @@ func TestValidator_Validate(t *testing.T) {
 			wantMsg:    []string{"missing home link (Accueil)"},
 		},
 		{
-			name:     "empty sections only requires home",
-			sections: []string{},
+			name:     "only home section",
+			sections: []section.Section{{DirName: "", DisplayName: "Accueil"}},
 			html: `<html><body>
 				<nav>
 					<a href="index.html">Accueil</a>
+				</nav>
+			</body></html>`,
+			wantErrors: 0,
+		},
+		{
+			name: "home display name from root index.md title",
+			sections: []section.Section{
+				{DirName: "", DisplayName: "Bienvenue sur mon blog"},
+				{DirName: "posts", DisplayName: "All Articles"},
+			},
+			html: `<html><body>
+				<nav>
+					<a href="index.html">Bienvenue sur mon blog</a>
+					<a href="posts/index.html">All Articles</a>
 				</nav>
 			</body></html>`,
 			wantErrors: 0,
