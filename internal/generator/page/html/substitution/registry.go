@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/timtimjnvr/blog/internal/generator/page/substitution/content"
-	"github.com/timtimjnvr/blog/internal/generator/page/substitution/navigation"
-	"github.com/timtimjnvr/blog/internal/generator/page/substitution/title"
+	"github.com/timtimjnvr/blog/internal/generator/page/html/substitution/content"
+	"github.com/timtimjnvr/blog/internal/generator/page/html/substitution/navigation"
+	"github.com/timtimjnvr/blog/internal/generator/page/html/substitution/title"
 	"github.com/timtimjnvr/blog/internal/generator/section"
 )
 
 // Registry manages substitutions and applies them to templates
 type Registry struct {
-	substitutions []Substituter
+	substitutions []Substituer
 }
 
 // NewRegistry creates a new substitution registry with default substituters
@@ -25,7 +25,7 @@ func NewRegistry(filePath, markdownSourcePath string, assetsPathTranslater, mark
 }
 
 // NewRegistryWithSubstituters creates a registry with custom substituters
-func NewRegistryWithSubstituters(subs ...Substituter) *Registry {
+func NewRegistryWithSubstituters(subs ...Substituer) *Registry {
 	return &Registry{
 		substitutions: subs,
 	}

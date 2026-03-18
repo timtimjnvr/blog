@@ -9,9 +9,10 @@ import (
 
 	"github.com/timtimjnvr/blog/internal/generator/page"
 	"github.com/timtimjnvr/blog/internal/generator/page/filesystem"
+	htmlsubstitutions "github.com/timtimjnvr/blog/internal/generator/page/html/substitution"
+	"github.com/timtimjnvr/blog/internal/generator/page/html/validation"
+	mdsubstitutions "github.com/timtimjnvr/blog/internal/generator/page/markdown/substitution"
 	"github.com/timtimjnvr/blog/internal/generator/page/styling"
-	"github.com/timtimjnvr/blog/internal/generator/page/substitution"
-	"github.com/timtimjnvr/blog/internal/generator/page/validation"
 	"github.com/timtimjnvr/blog/internal/generator/section"
 )
 
@@ -107,12 +108,13 @@ func defaultPageGeneratorFactory(sourceMDPath, destinationHTMLPath, buildDir, pa
 	}
 
 	var (
-		fs            = filesystem.NewOSFileSystem()
-		substitutions = substitution.NewRegistry(destinationHTMLPath, sourceMDPath, assetsPathTranslater, linksPathTranslater, sections, pageSection)
-		validations   = validation.NewRegistry(sections)
+		fs                    = filesystem.NewOSFileSystem()
+		markdownSubstitutions = mdsubstitutions.NewRegistry(sourceMDPath)
+		HTMLSubstitutions     = htmlsubstitutions.NewRegistry(destinationHTMLPath, sourceMDPath, assetsPathTranslater, linksPathTranslater, sections, pageSection)
+		validations           = validation.NewRegistry(sections)
 	)
 
-	return page.NewGenerator(sourceMDPath, destinationHTMLPath, buildDir, pageSection, config, fs, substitutions, validations)
+	return page.NewGenerator(sourceMDPath, destinationHTMLPath, buildDir, pageSection, config, fs, markdownSubstitutions, HTMLSubstitutions, validations)
 }
 
 func (g *Generator) loadStylingConfig() error {

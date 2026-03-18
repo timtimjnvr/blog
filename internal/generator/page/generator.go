@@ -7,26 +7,28 @@ import (
 	"path/filepath"
 
 	"github.com/timtimjnvr/blog/internal/generator/page/filesystem"
+	htmlsubstitution "github.com/timtimjnvr/blog/internal/generator/page/html/substitution"
+	"github.com/timtimjnvr/blog/internal/generator/page/html/validation"
 	"github.com/timtimjnvr/blog/internal/generator/page/markdown"
+	mdsubstitution "github.com/timtimjnvr/blog/internal/generator/page/markdown/substitution"
 	"github.com/timtimjnvr/blog/internal/generator/page/styling"
-	"github.com/timtimjnvr/blog/internal/generator/page/substitution"
-	"github.com/timtimjnvr/blog/internal/generator/page/validation"
 )
 
 //go:embed page.html
 var defaultTemplate string
 
 type Generator struct {
-	htmlPageTemplate    string
-	sourceMDPath        string
-	stylingConfig       styling.Config
-	buildDir            string
-	htmlContentBytes    []byte
-	destinationHTMLPath string
-	sectionName         string
-	fs                  filesystem.FileSystem
-	substitutions       *substitution.Registry
-	validations         *validation.Registry
+	htmlPageTemplate      string
+	sourceMDPath          string
+	stylingConfig         styling.Config
+	buildDir              string
+	htmlContentBytes      []byte
+	destinationHTMLPath   string
+	sectionName           string
+	fs                    filesystem.FileSystem
+	markdownSubstitutions *mdsubstitution.Registry
+	HTMLSubstitutions     *htmlsubstitution.Registry
+	validations           *validation.Registry
 }
 
 func NewGenerator(
@@ -36,19 +38,21 @@ func NewGenerator(
 	sectionName string,
 	stylingConfig styling.Config,
 	fs filesystem.FileSystem,
-	substitutions *substitution.Registry,
+	markdownSubstitutions *mdsubstitution.Registry,
+	HTMLSubstitutions *htmlsubstitution.Registry,
 	validations *validation.Registry,
 ) *Generator {
 	return &Generator{
-		htmlPageTemplate:    defaultTemplate,
-		sourceMDPath:        markdownSourcePath,
-		destinationHTMLPath: htmlOutputPath,
-		buildDir:            buildDir,
-		sectionName:         sectionName,
-		stylingConfig:       stylingConfig,
-		fs:                  fs,
-		substitutions:       substitutions,
-		validations:         validations,
+		htmlPageTemplate:      defaultTemplate,
+		sourceMDPath:          markdownSourcePath,
+		destinationHTMLPath:   htmlOutputPath,
+		buildDir:              buildDir,
+		sectionName:           sectionName,
+		stylingConfig:         stylingConfig,
+		fs:                    fs,
+		markdownSubstitutions: markdownSubstitutions,
+		HTMLSubstitutions:     HTMLSubstitutions,
+		validations:           validations,
 	}
 }
 
@@ -60,14 +64,20 @@ func (g *Generator) Generate() error {
 		return fmt.Errorf("reading %s: %w", g.sourceMDPath, err)
 	}
 
-	// Apply Styling convertions
-	htmlContent, err := markdown.NewConverter(&g.stylingConfig, g.sectionName).Convert(markdDownSourceContent)
+	// Apply needed substitutions and generation in mardkdown
+	markdDownStringSourceContent, err := g.markdownSubstitutions.Apply(string(markdDownSourceContent))
+	if err != nil {
+		return fmt.Errorf("failed to project content inside the page template: %v", err)
+	}
+
+	// Convert marddown to HTML
+	htmlContent, err := markdown.NewConverter(&g.stylingConfig, g.sectionName).Convert([]byte(markdDownStringSourceContent))
 	if err != nil {
 		return fmt.Errorf("failed to convert markdown content: %v", err)
 	}
 
 	// Project result inside the page template
-	htmlContent, err = g.substitutions.Apply(g.htmlPageTemplate, htmlContent)
+	htmlContent, err = g.HTMLSubstitutions.Apply(g.htmlPageTemplate, htmlContent)
 	if err != nil {
 		return fmt.Errorf("failed to project content inside the page template: %v", err)
 	}

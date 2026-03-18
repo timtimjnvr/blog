@@ -3,10 +3,10 @@ package validation
 import (
 	"errors"
 
-	"github.com/timtimjnvr/blog/internal/generator/page/validation/image"
-	"github.com/timtimjnvr/blog/internal/generator/page/validation/link"
-	"github.com/timtimjnvr/blog/internal/generator/page/validation/navigation"
-	"github.com/timtimjnvr/blog/internal/generator/page/validation/script"
+	"github.com/timtimjnvr/blog/internal/generator/page/html/validation/image"
+	"github.com/timtimjnvr/blog/internal/generator/page/html/validation/link"
+	"github.com/timtimjnvr/blog/internal/generator/page/html/validation/navigation"
+	"github.com/timtimjnvr/blog/internal/generator/page/html/validation/script"
 	"github.com/timtimjnvr/blog/internal/generator/section"
 )
 

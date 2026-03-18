@@ -60,7 +60,7 @@ func TestNewRegistryWithSubstituters(t *testing.T) {
 func TestRegistry_Apply(t *testing.T) {
 	tests := []struct {
 		name     string
-		subs     []Substituter
+		subs     []Substituer
 		template string
 		content  string
 		want     string
@@ -68,7 +68,7 @@ func TestRegistry_Apply(t *testing.T) {
 	}{
 		{
 			name: "applies single substitution",
-			subs: []Substituter{
+			subs: []Substituer{
 				fakeSubstituter{
 					placeholder: "{{name}}",
 					resolveFunc: func(string) (string, error) { return "World", nil },
@@ -80,7 +80,7 @@ func TestRegistry_Apply(t *testing.T) {
 		},
 		{
 			name: "applies multiple substitutions",
-			subs: []Substituter{
+			subs: []Substituer{
 				fakeSubstituter{
 					placeholder: "{{title}}",
 					resolveFunc: func(string) (string, error) { return "My Title", nil },
@@ -96,14 +96,14 @@ func TestRegistry_Apply(t *testing.T) {
 		},
 		{
 			name:     "no substitutions returns template as-is",
-			subs:     []Substituter{},
+			subs:     []Substituer{},
 			template: "Hello World",
 			content:  "anything",
 			want:     "Hello World",
 		},
 		{
 			name: "returns error when resolve fails",
-			subs: []Substituter{
+			subs: []Substituer{
 				fakeSubstituter{
 					placeholder: "{{fail}}",
 					resolveFunc: func(string) (string, error) { return "", fmt.Errorf("resolve error") },
@@ -115,7 +115,7 @@ func TestRegistry_Apply(t *testing.T) {
 		},
 		{
 			name: "replaces all occurrences of same placeholder",
-			subs: []Substituter{
+			subs: []Substituer{
 				fakeSubstituter{
 					placeholder: "{{x}}",
 					resolveFunc: func(string) (string, error) { return "val", nil },
@@ -127,7 +127,7 @@ func TestRegistry_Apply(t *testing.T) {
 		},
 		{
 			name: "template without matching placeholder unchanged",
-			subs: []Substituter{
+			subs: []Substituer{
 				fakeSubstituter{
 					placeholder: "{{missing}}",
 					resolveFunc: func(string) (string, error) { return "value", nil },

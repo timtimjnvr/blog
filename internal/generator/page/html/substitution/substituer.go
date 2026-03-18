@@ -1,6 +1,6 @@
 package substitution
 
-type Substituter interface {
+type Substituer interface {
 	// The pattern to be replaced by the Resolve return
 	Placeholder() string
 

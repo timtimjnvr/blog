@@ -50,7 +50,12 @@ blog/
 ├── scripts/                     # JavaScript files
 ├── internal/
 │   └── generator/
-│       ├── page/                # Page generation (markdown, substitution, validation, styling)
+│       ├── page/
+│       │   ├── html/            # HTML substitution and validation
+│       │   │   ├── substitution/ # {{title}}, {{content}}, {{navigation}}
+│       │   │   └── validation/  # link, image, navigation, script validators
+│       │   └── markdown/        # Markdown substitution (runs before HTML conversion)
+│       │       └── substitution/ # {{list-child-articles}}
 │       └── site/                # Site-level generation (routing, asset copying)
 ├── content/
 │   ├── markdown/                # Markdown source files
@@ -69,14 +74,19 @@ Markdown Files (content/markdown/)
 ┌─────────────────────────────────────────────────────────┐
 │  Site Generator                                         │
 │  ├─ List sections (top-level dirs in content/markdown/) │
+│  │   └─ Section display name from # title in index.md  │
 │  ├─ Copy assets & scripts                               │
 │  └─ For each .md file → Page Generator                  │
+│      ├─ Markdown Substitution Registry                  │
+│      │   └─ {{list-child-articles}} → Markdown links    │
+│      │       to sibling .md files (title from H1)       │
 │      ├─ Markdown Converter (Goldmark + GFM)             │
 │      │   └─ Style Transformer (optional)                │
-│      ├─ Substitution Registry                           │
+│      ├─ HTML Substitution Registry                      │
 │      │   ├─ {{title}} → First H1 from markdown          │
 │      │   ├─ {{content}} → Converted HTML                │
-│      │   └─ {{navigation}} → Auto-generated nav bar     │
+│      │   └─ {{navigation}} → Nav bar with section links │
+│      │       (display names from each section's index)  │
 │      └─ Validators                                      │
 │          ├─ Link Validator                              │
 │          ├─ Image Validator                             │
@@ -86,6 +96,10 @@ Markdown Files (content/markdown/)
     ▼
 HTML Files (target/build/)
 ```
+
+### Template Substitutions
+
+The generator supports two layers of substitutions applied in order: markdown substitutions (before HTML conversion) and HTML substitutions (applied to the template).
 
 ### Styling System
 
