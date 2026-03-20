@@ -1,9 +1,9 @@
-# Bienvenue sur mon blog
+# Acceuil
 
-Ceci est mon site personnel où je partage mes réflexions et articles.
+Ceci est mon site personnel où je partage mes réflexions.
 
 ## À propos
 
-Un blog généré à partir de fichiers markdown avec Go et [goldmark](https://github.com/yuin/goldmark).
+Un blog statique généré à partir d'un [générateur](https://github.com/timtimjnvr/blog) en _Go_ et de fichiers _markdown_.
 
 Consultez mes [articles](posts/index.md) pour découvrir mon contenu.
