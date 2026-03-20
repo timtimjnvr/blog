@@ -42,7 +42,7 @@ func (n Substituter) Resolve(_ string) (string, error) {
 		links = append(links, fmt.Sprintf(`<a href="%s" class="%s">%s</a>`, href, class, s.DisplayName))
 	}
 
-	return fmt.Sprintf(`<nav class="flex gap-4">%s</nav>`, strings.Join(links, "\n    ")), nil
+	return fmt.Sprintf(`<nav class="flex flex-col sm:flex-row gap-4">%s</nav>`, strings.Join(links, "\n    ")), nil
 }
 
 // relativePrefix returns the "../" prefix needed to reach the site root from the current section.
