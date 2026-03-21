@@ -30,8 +30,8 @@ func TestNewRegistry(t *testing.T) {
 		t.Fatal("NewRegistry() returned nil")
 		return
 	}
-	if len(r.substitutions) != 3 {
-		t.Errorf("NewRegistry() should have 3 default substituters, got %d", len(r.substitutions))
+	if len(r.substitutions) != 4 {
+		t.Errorf("NewRegistry() should have 4 default substituters, got %d", len(r.substitutions))
 	}
 }
 
@@ -177,5 +177,29 @@ func TestRegistry_Apply_WithDefaultSubstituters(t *testing.T) {
 	}
 	if !strings.Contains(result, "<nav") {
 		t.Errorf("expected navigation substitution, got %q", result)
+	}
+}
+
+func TestRegistry_Apply_SummarySubstitution(t *testing.T) {
+	r := NewRegistry("output.html", "source.md", nil, nil, []section.Section{{DirName: "", DisplayName: "Accueil"}}, "")
+	template := `<body>{{content}}</body>`
+	content := `<h1 id="title">Title</h1>` +
+		`<p>{{summary}}</p>` +
+		`<h2 id="intro"><a href="#intro" class="heading-anchor">#</a>Introduction</h2>` +
+		`<h3 id="details"><a href="#details" class="heading-anchor">#</a>Details</h3>`
+
+	result, err := r.Apply(template, content)
+	if err != nil {
+		t.Fatalf("Apply() unexpected error: %v", err)
+	}
+
+	if strings.Contains(result, "{{summary}}") {
+		t.Error("{{summary}} placeholder should have been replaced")
+	}
+	if !strings.Contains(result, `href="#intro"`) {
+		t.Errorf("expected summary link to #intro, got %q", result)
+	}
+	if !strings.Contains(result, `href="#details"`) {
+		t.Errorf("expected summary link to #details, got %q", result)
 	}
 }

@@ -25,12 +25,12 @@ func (r *HeadingRenderer) renderHeading(
 			html.RenderAttributes(w, node, html.HeadingAttributeFilter)
 		}
 		_ = w.WriteByte('>')
+	} else {
 		if id, ok := n.AttributeString("id"); ok {
 			_, _ = w.WriteString(`<a href="#`)
 			_, _ = w.Write(util.EscapeHTML(id.([]byte)))
 			_, _ = w.WriteString(`" class="heading-anchor">#</a>`)
 		}
-	} else {
 		_, _ = w.WriteString("</h")
 		_ = w.WriteByte("0123456"[n.Level])
 		_, _ = w.WriteString(">\n")

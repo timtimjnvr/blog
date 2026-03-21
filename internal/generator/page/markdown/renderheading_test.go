@@ -139,10 +139,10 @@ func TestHeadingRenderer_AnchorStructure(t *testing.T) {
 		t.Errorf("expected # as anchor content, got %q", result)
 	}
 
-	// Anchor appears before heading text
+	// Anchor appears after heading text
 	anchorIdx := strings.Index(result, `<a href="#my-section"`)
-	textIdx := strings.Index(result, "My Section</h2>")
-	if anchorIdx == -1 || textIdx == -1 || anchorIdx >= textIdx {
-		t.Errorf("anchor should appear before heading text, got %q", result)
+	textIdx := strings.Index(result, "My Section")
+	if anchorIdx == -1 || textIdx == -1 || anchorIdx <= textIdx {
+		t.Errorf("anchor should appear after heading text, got %q", result)
 	}
 }

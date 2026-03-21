@@ -6,6 +6,7 @@ import (
 
 	"github.com/timtimjnvr/blog/internal/generator/page/html/substitution/content"
 	"github.com/timtimjnvr/blog/internal/generator/page/html/substitution/navigation"
+	"github.com/timtimjnvr/blog/internal/generator/page/html/substitution/summary"
 	"github.com/timtimjnvr/blog/internal/generator/page/html/substitution/title"
 	"github.com/timtimjnvr/blog/internal/generator/section"
 )
@@ -19,6 +20,7 @@ type Registry struct {
 func NewRegistry(filePath, markdownSourcePath string, assetsPathTranslater, markdownPathTranslater content.PathTranslater, sections []section.Section, currentSection string) *Registry {
 	return NewRegistryWithSubstituters(
 		content.NewSubstituer(filePath, markdownSourcePath, assetsPathTranslater, markdownPathTranslater),
+		summary.NewSubstituer(),
 		title.NewSubstituer(),
 		navigation.NewSubstituer(sections, currentSection),
 	)

@@ -2,6 +2,8 @@
 
 Ceci est un deuxième article pour démontrer la liste d'articles.
 
+{{summary}}
+
 ## Contenu
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit.
@@ -12,7 +14,9 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 - Point 2
 - Point 3
 
-## Tableau exemple
+## Tableau exemple 1
+### Tableau exemple 2
+#### Tableau exemple 3
 
 | Nom       | Âge | Ville     |
 |-----------|-----|-----------|
