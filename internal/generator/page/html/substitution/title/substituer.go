@@ -18,8 +18,8 @@ func (t Substituter) Placeholder() string {
 }
 
 func (t Substituter) Resolve(content string) (string, error) {
-	// Look for <h1> tag in HTML content
-	re := regexp.MustCompile(`<h1[^>]*>([^<]+)</h1>`)
+	// Look for <h1> tag in HTML content, skipping any anchor link inside
+	re := regexp.MustCompile(`<h1[^>]*>(?:<a[^>]*>[^<]*</a>)?([^<]+)</h1>`)
 	match := re.FindSubmatch([]byte(content))
 	if len(match) >= 2 {
 		return string(match[1]), nil

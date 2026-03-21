@@ -3,3 +3,25 @@
 @plugin "@tailwindcss/typography";
 @source "./internal/generator/page.html";
 @source "./target/build/**/*.html";
+
+.heading-anchor {
+  opacity: 0;
+  margin-left: 0.5rem;
+  text-decoration: none;
+  font-weight: 400;
+  color: var(--color-gray-400);
+  transition: opacity 0.2s;
+}
+
+h1:hover .heading-anchor,
+h2:hover .heading-anchor,
+h3:hover .heading-anchor,
+h4:hover .heading-anchor,
+h5:hover .heading-anchor,
+h6:hover .heading-anchor {
+  opacity: 1;
+}
+
+.heading-anchor:hover {
+  color: var(--color-gray-600);
+}

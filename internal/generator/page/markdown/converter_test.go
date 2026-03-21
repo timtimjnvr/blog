@@ -27,7 +27,7 @@ func TestConverter_Convert(t *testing.T) {
 		{
 			name:     "converts heading",
 			input:    "# Hello World",
-			contains: []string{"<h1>Hello World</h1>"},
+			contains: []string{`<h1 id="hello-world"><a href="#hello-world" class="heading-anchor">#</a>Hello World</h1>`},
 		},
 		{
 			name:     "converts paragraph",
@@ -119,7 +119,7 @@ func TestConverter_Convert_ReturnsValidHTML(t *testing.T) {
 	}
 
 	// Check basic structure
-	if !strings.Contains(result, "<h1>") {
+	if !strings.Contains(result, `<h1 id="title"><a href="#title"`) {
 		t.Error("missing h1 tag")
 	}
 	if !strings.Contains(result, "<p>") {

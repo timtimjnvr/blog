@@ -7,6 +7,7 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/util"
 )
 
@@ -22,6 +23,8 @@ func NewConverter(styleConfig *styling.Config, context string) *Converter {
 	parserOpts := []parser.Option{
 		// Enable inline attribute syntax: {.class #id key=value}
 		parser.WithAttribute(),
+		// Generate id attributes on headings for anchor navigation
+		parser.WithAutoHeadingID(),
 	}
 
 	// Add style transformer if config is provided
@@ -38,6 +41,11 @@ func NewConverter(styleConfig *styling.Config, context string) *Converter {
 		md: goldmark.New(
 			goldmark.WithExtensions(extension.GFM),
 			goldmark.WithParserOptions(parserOpts...),
+			goldmark.WithRendererOptions(
+				renderer.WithNodeRenderers(
+					util.Prioritized(&HeadingRenderer{}, 100),
+				),
+			),
 		),
 	}
 }
