@@ -12,8 +12,6 @@ var headingRe = regexp.MustCompile(`<h([2-6])[^>]*id="([^"]+)"[^>]*>([^<]+)(?:<a
 func textSizeClass(depth int) string {
 	switch depth {
 	case 1:
-		return "text-base"
-	case 2:
 		return "text-sm"
 	default:
 		return "text-xs"
@@ -50,6 +48,7 @@ func (s Substituter) Resolve(content string) (string, error) {
 	}
 
 	var sb strings.Builder
+	sb.WriteString(`<hr class="border-gray-200 dark:border-gray-700">`)
 	sb.WriteString("<nav>")
 
 	prevLevel := items[0].level - 1
@@ -59,7 +58,7 @@ func (s Substituter) Resolve(content string) (string, error) {
 		switch {
 		case item.level > prevLevel:
 			for i := prevLevel; i < item.level; i++ {
-				sb.WriteString(`<ul class="space-y-1">`)
+				sb.WriteString(`<ul>`)
 				depth++
 			}
 		case item.level == prevLevel:
@@ -81,6 +80,7 @@ func (s Substituter) Resolve(content string) (string, error) {
 		depth--
 	}
 	sb.WriteString("</ul></nav>")
+	sb.WriteString(`<hr class="border-gray-200 dark:border-gray-700">`)
 
 	return sb.String(), nil
 }
