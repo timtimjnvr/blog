@@ -4,6 +4,16 @@
 @source "./internal/generator/page.html";
 @source "./target/build/**/*.html";
 
+.prose nav ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.prose nav li {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
 .heading-anchor {
   opacity: 0;
   margin-left: 0.5rem;
