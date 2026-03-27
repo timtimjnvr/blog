@@ -47,7 +47,7 @@ func (v *Validator) Validate(htmlPath, buildDir string, content []byte) []error 
 				continue
 			}
 			if err := v.validateExternalImage(src); err != nil {
-				errs = append(errs, fmt.Errorf("%s: external image not accessible: %s (%v)", htmlPath, src, err))
+				errs = append(errs, fmt.Errorf("%s: external image not accessible: %s (%w)", htmlPath, src, err))
 			}
 		} else {
 			if err := v.validateLocalImage(src, htmlPath, buildDir); err != nil {

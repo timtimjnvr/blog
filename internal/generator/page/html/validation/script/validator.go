@@ -61,12 +61,12 @@ func (v *Validator) Validate(htmlPath, buildDir string, content []byte) []error 
 func (v *Validator) validateJSSyntax(scriptPath string) []error {
 	content, err := os.ReadFile(scriptPath)
 	if err != nil {
-		return []error{fmt.Errorf("%s: failed to read script: %v", scriptPath, err)}
+		return []error{fmt.Errorf("%s: failed to read script: %w", scriptPath, err)}
 	}
 
 	_, parseErr := jsparser.ParseFile(nil, scriptPath, string(content), 0)
 	if parseErr != nil {
-		return []error{fmt.Errorf("%s: JavaScript syntax error: %v", scriptPath, parseErr)}
+		return []error{fmt.Errorf("%s: JavaScript syntax error: %w", scriptPath, parseErr)}
 	}
 
 	return nil
