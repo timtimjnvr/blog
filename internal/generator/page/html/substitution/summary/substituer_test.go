@@ -1,8 +1,9 @@
 package summary
 
 import (
-	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSubstituter_Placeholder(t *testing.T) {
@@ -25,20 +26,20 @@ func TestSubstituter_Resolve(t *testing.T) {
 				`<h2 id="intro">Introduction<a href="#intro" class="heading-anchor">#</a></h2>` +
 				`<h3 id="details">Details<a href="#details" class="heading-anchor">#</a></h3>`,
 			contains: []string{
-				`<a href="#intro" class="text-base">Introduction</a>`,
-				`<a href="#details" class="text-sm">Details</a>`,
+				`<a href="#intro" class="text-sm">Introduction</a>`,
+				`<a href="#details" class="text-xs">Details</a>`,
 			},
 		},
 		{
 			name: "h1 is ignored",
 			content: `<h1 id="page-title">Page Title<a href="#page-title" class="heading-anchor">#</a></h1>` +
 				`<h2 id="section">Section<a href="#section" class="heading-anchor">#</a></h2>`,
-			contains: []string{`<a href="#section" class="text-base">Section</a>`},
+			contains: []string{`<a href="#section" class="text-sm">Section</a>`},
 		},
 		{
-			name:  "h1 only returns empty string",
+			name:    "h1 only returns empty string",
 			content: `<h1 id="page-title">Page Title<a href="#page-title" class="heading-anchor">#</a></h1>`,
-			empty: true,
+			empty:   true,
 		},
 		{
 			name:    "no headings returns empty string",
@@ -55,8 +56,8 @@ func TestSubstituter_Resolve(t *testing.T) {
 			content: `<h2 id="a">A<a href="#a" class="heading-anchor">#</a></h2>` +
 				`<h2 id="b">B<a href="#b" class="heading-anchor">#</a></h2>`,
 			contains: []string{
-				`<a href="#a" class="text-base">A</a>`,
-				`<a href="#b" class="text-base">B</a>`,
+				`<a href="#a" class="text-sm">A</a>`,
+				`<a href="#b" class="text-sm">B</a>`,
 			},
 		},
 		{
@@ -64,7 +65,7 @@ func TestSubstituter_Resolve(t *testing.T) {
 			content: `<h2 id="intro">Intro<a href="#intro" class="heading-anchor">#</a></h2>` +
 				`<h3 id="details">Details<a href="#details" class="heading-anchor">#</a></h3>`,
 			contains: []string{
-				`<li><a href="#intro" class="text-base">Intro</a><ul class="space-y-1"><li><a href="#details" class="text-sm">Details</a></li></ul></li>`,
+				`<li><a href="#intro" class="text-sm">Intro</a><ul><li><a href="#details" class="text-xs">Details</a></li></ul></li>`,
 			},
 		},
 		{
@@ -73,7 +74,7 @@ func TestSubstituter_Resolve(t *testing.T) {
 				`<h3 id="b">B<a href="#b" class="heading-anchor">#</a></h3>` +
 				`<h2 id="c">C<a href="#c" class="heading-anchor">#</a></h2>`,
 			contains: []string{
-				`</ul></li><li><a href="#c" class="text-base">C</a></li>`,
+				`</ul></li><li><a href="#c" class="text-sm">C</a></li>`,
 			},
 		},
 		{
@@ -81,24 +82,24 @@ func TestSubstituter_Resolve(t *testing.T) {
 			content: `<h2 id="a">A<a href="#a" class="heading-anchor">#</a></h2>` +
 				`<h4 id="b">B<a href="#b" class="heading-anchor">#</a></h4>`,
 			contains: []string{
-				`<a href="#a" class="text-base">A</a><ul class="space-y-1"><ul class="space-y-1"><li><a href="#b" class="text-xs">B</a>`,
+				`<a href="#a" class="text-sm">A</a><ul><ul><li><a href="#b" class="text-xs">B</a>`,
 			},
 		},
 		{
-			name: "text-base on first level, text-sm on second, text-xs on third+",
+			name: "text-sm on first level, text-xs on second+",
 			content: `<h2 id="a">A<a href="#a" class="heading-anchor">#</a></h2>` +
 				`<h3 id="b">B<a href="#b" class="heading-anchor">#</a></h3>` +
 				`<h4 id="c">C<a href="#c" class="heading-anchor">#</a></h4>`,
 			contains: []string{
-				`class="text-base"`,
 				`class="text-sm"`,
+				`class="text-xs"`,
 				`class="text-xs"`,
 			},
 		},
 		{
 			name:     "output wrapped in nav and ul",
 			content:  `<h2 id="section">Section<a href="#section" class="heading-anchor">#</a></h2>`,
-			contains: []string{`<nav><ul class="space-y-1">`, "</ul></nav>"},
+			contains: []string{`<nav><ul>`, "</ul></nav>"},
 		},
 		{
 			name: "all levels h2-h6 included",
@@ -129,9 +130,7 @@ func TestSubstituter_Resolve(t *testing.T) {
 			}
 
 			for _, substr := range tt.contains {
-				if !strings.Contains(result, substr) {
-					t.Errorf("Resolve() should contain %q, got %q", substr, result)
-				}
+				assert.Contains(t, result, substr)
 			}
 		})
 	}
