@@ -67,19 +67,19 @@ func (g *Generator) Generate() error {
 	// Apply needed substitutions and generation in mardkdown
 	markdDownStringSourceContent, err := g.markdownSubstitutions.Apply(string(markdDownSourceContent))
 	if err != nil {
-		return fmt.Errorf("failed to project content inside the page template: %v", err)
+		return fmt.Errorf("failed to project content inside the page template: %w", err)
 	}
 
 	// Convert marddown to HTML
 	htmlContent, err := markdown.NewConverter(&g.stylingConfig, g.sectionName).Convert([]byte(markdDownStringSourceContent))
 	if err != nil {
-		return fmt.Errorf("failed to convert markdown content: %v", err)
+		return fmt.Errorf("failed to convert markdown content: %w", err)
 	}
 
 	// Project result inside the page template
 	htmlContent, err = g.HTMLSubstitutions.Apply(g.htmlPageTemplate, htmlContent)
 	if err != nil {
-		return fmt.Errorf("failed to project content inside the page template: %v", err)
+		return fmt.Errorf("failed to project content inside the page template: %w", err)
 	}
 
 	// Ensure output directory exists

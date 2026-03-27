@@ -39,7 +39,7 @@ func (r Registry) Apply(template, content string) (string, error) {
 	for _, s := range r.substitutions {
 		resolution, err := s.Resolve(content)
 		if err != nil {
-			return "", fmt.Errorf("failed to resolve substitution: %v", err)
+			return "", fmt.Errorf("failed to resolve substitution: %w", err)
 		}
 		result = strings.ReplaceAll(result, s.Placeholder(), resolution)
 	}
