@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/timtimjnvr/blog/internal/generator/page/html/validation/shared"
 )
 
 // Validator checks that all links in HTML are accessible
@@ -16,6 +18,7 @@ type Validator struct {
 	Timeout time.Duration
 	// SkipExternal skips validation of external URLs
 	SkipExternal bool
+	linkRegex    *regexp.Regexp
 }
 
 // NewValidator creates a new link validator with default settings
@@ -23,6 +26,7 @@ func NewValidator() *Validator {
 	return &Validator{
 		Timeout:      10 * time.Second,
 		SkipExternal: false,
+		linkRegex:    regexp.MustCompile(`<a[^>]+href="([^"]+)"`),
 	}
 }
 
@@ -31,8 +35,7 @@ func (v *Validator) Validate(htmlPath, buildDir string, content []byte) []error 
 	var errs []error
 
 	// Find all anchor href attributes
-	linkRegex := regexp.MustCompile(`<a[^>]+href="([^"]+)"`)
-	matches := linkRegex.FindAllSubmatch(content, -1)
+	matches := v.linkRegex.FindAllSubmatch(content, -1)
 
 	for _, match := range matches {
 		if len(match) < 2 {
@@ -56,7 +59,7 @@ func (v *Validator) Validate(htmlPath, buildDir string, content []byte) []error 
 			continue
 		}
 
-		if isExternalURL(href) {
+		if shared.IsExternalURL(href) {
 			if v.SkipExternal {
 				continue
 			}
@@ -71,11 +74,6 @@ func (v *Validator) Validate(htmlPath, buildDir string, content []byte) []error 
 	}
 
 	return errs
-}
-
-// isExternalURL checks if the URL is external (http/https)
-func isExternalURL(src string) bool {
-	return strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://")
 }
 
 // validateExternalLink checks if an external URL is accessible
@@ -107,19 +105,7 @@ func (v *Validator) validateLocalLink(href, htmlPath, buildDir string) error {
 		return nil
 	}
 
-	var linkPath string
-
-	if strings.HasPrefix(href, "/") {
-		// Absolute path from build root
-		linkPath = filepath.Join(buildDir, href)
-	} else {
-		// Relative path from HTML file location
-		htmlDir := filepath.Dir(htmlPath)
-		linkPath = filepath.Join(htmlDir, href)
-	}
-
-	// Clean the path to resolve ../ etc
-	linkPath = filepath.Clean(linkPath)
+	linkPath := shared.ResolveLocalPath(href, htmlPath, buildDir)
 
 	// Check if path exists as-is (could be a file or directory)
 	if _, err := os.Stat(linkPath); err == nil {

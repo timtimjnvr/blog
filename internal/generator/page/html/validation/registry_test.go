@@ -43,16 +43,6 @@ func TestNewRegistryWithValidators(t *testing.T) {
 	}
 }
 
-func TestNewDefaultRegistry(t *testing.T) {
-	r := NewDefaultRegistry([]section.Section{{DirName: "", DisplayName: "Accueil"}, {DirName: "posts", DisplayName: "Posts"}})
-	if r == nil {
-		t.Fatal("NewDefaultRegistry() returned nil")
-		return
-	}
-	if len(r.validators) != 4 {
-		t.Errorf("NewDefaultRegistry() should have 4 validators (image, script, link, navigation), got %d", len(r.validators))
-	}
-}
 
 func TestRegistry_Register(t *testing.T) {
 	r := NewRegistryWithValidators()

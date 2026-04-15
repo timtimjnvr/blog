@@ -28,7 +28,7 @@ func NewSubstituer[T Printer](placeHolder string, lister Lister[T], itemSeparato
 	}
 }
 
-func (s *Substituer[T]) PlaceHolder() string {
+func (s *Substituer[T]) Placeholder() string {
 	return s.placeHolder
 }
 

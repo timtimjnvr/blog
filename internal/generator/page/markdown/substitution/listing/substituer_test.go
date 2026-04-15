@@ -22,8 +22,8 @@ func (f fakeLister) ListPrinters() ([]fakePrinter, error) {
 
 func TestNewSubstituer(t *testing.T) {
 	s := NewSubstituer("{{placeholder}}", fakeLister{}, "\n")
-	if s.PlaceHolder() != "{{placeholder}}" {
-		t.Errorf("PlaceHolder() = %q, want %q", s.PlaceHolder(), "{{placeholder}}")
+	if s.Placeholder() != "{{placeholder}}" {
+		t.Errorf("Placeholder() = %q, want %q", s.Placeholder(), "{{placeholder}}")
 	}
 }
 

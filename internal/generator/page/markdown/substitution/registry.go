@@ -29,7 +29,7 @@ func NewRegistryWithSubstituters(subs ...Substituer) *Registry {
 // Apply replaces substititutions place holders with resolution in content
 func (r *Registry) Apply(content string) (string, error) {
 	for _, s := range r.substitutions {
-		if !strings.Contains(content, s.PlaceHolder()) {
+		if !strings.Contains(content, s.Placeholder()) {
 			return content, nil
 		}
 
@@ -38,7 +38,7 @@ func (r *Registry) Apply(content string) (string, error) {
 			return "", err
 		}
 
-		content = strings.ReplaceAll(content, s.PlaceHolder(), resolution)
+		content = strings.ReplaceAll(content, s.Placeholder(), resolution)
 	}
 
 	return content, nil

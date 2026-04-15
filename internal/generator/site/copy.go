@@ -4,7 +4,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
+
+func (g *Generator) copyAssets() error {
+	return copyDir(g.assetsDir, filepath.Join(g.buildDir, "assets"), nil)
+}
+
+func (g *Generator) copyScripts() error {
+	return copyDir(g.scriptsDir, filepath.Join(g.buildDir, "scripts"), func(path string) bool {
+		return strings.HasSuffix(path, ".js")
+	})
+}
 
 // copyDir copies files from srcDir to destDir, optionally filtering by the provided function.
 // If filter is nil, all files are copied. If filter returns true, the file is copied.

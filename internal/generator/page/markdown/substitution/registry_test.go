@@ -11,7 +11,7 @@ type fakeSubstituter struct {
 	err         error
 }
 
-func (f fakeSubstituter) PlaceHolder() string      { return f.placeholder }
+func (f fakeSubstituter) Placeholder() string      { return f.placeholder }
 func (f fakeSubstituter) Resolve() (string, error) { return f.resolution, f.err }
 
 func TestNewRegistry(t *testing.T) {

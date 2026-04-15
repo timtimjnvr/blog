@@ -6,7 +6,6 @@ import (
 	"github.com/timtimjnvr/blog/internal/generator/page/html/validation/image"
 	"github.com/timtimjnvr/blog/internal/generator/page/html/validation/link"
 	"github.com/timtimjnvr/blog/internal/generator/page/html/validation/navigation"
-	"github.com/timtimjnvr/blog/internal/generator/page/html/validation/script"
 	"github.com/timtimjnvr/blog/internal/generator/section"
 )
 
@@ -30,18 +29,6 @@ func NewRegistry(sections []section.Section) *Registry {
 func NewRegistryWithValidators(validators ...Validator) *Registry {
 	return &Registry{
 		validators: validators,
-	}
-}
-
-// NewDefaultRegistry creates a validation registry with default validators (image, script, link, navigation)
-func NewDefaultRegistry(sections []section.Section) *Registry {
-	return &Registry{
-		validators: []Validator{
-			image.NewValidator(),
-			script.NewValidator(),
-			link.NewValidator(),
-			navigation.NewValidator(sections),
-		},
 	}
 }
 

@@ -11,14 +11,18 @@ import (
 // Validator checks that the generated HTML contains a <nav> element
 // with links to all expected sections
 type Validator struct {
-	sections []section.Section
+	sections      []section.Section
+	navRegex      *regexp.Regexp
+	homeHrefRegex *regexp.Regexp
 }
 
 // NewValidator creates a new navigation validator that will check
 // for the presence of nav links to all given sections plus the home page
 func NewValidator(sections []section.Section) *Validator {
 	return &Validator{
-		sections: sections,
+		sections:      sections,
+		navRegex:      regexp.MustCompile(`(?s)<nav[^>]*>(.*?)</nav>`),
+		homeHrefRegex: regexp.MustCompile(`href="(\.\./)*index\.html"`),
 	}
 }
 
@@ -28,8 +32,7 @@ func (v *Validator) Validate(htmlPath, buildDir string, content []byte) []error 
 	html := string(content)
 
 	// Extract <nav> content
-	navRegex := regexp.MustCompile(`(?s)<nav[^>]*>(.*?)</nav>`)
-	navMatch := navRegex.FindStringSubmatch(html)
+	navMatch := v.navRegex.FindStringSubmatch(html)
 	if len(navMatch) < 2 {
 		errs = append(errs, fmt.Errorf("%s: missing <nav> element", htmlPath))
 		return errs
@@ -40,11 +43,10 @@ func (v *Validator) Validate(htmlPath, buildDir string, content []byte) []error 
 	for _, s := range v.sections {
 		if s.DirName == "" {
 			// Home section: href may be prefixed with ../ depending on depth
-			homeHrefRegex := regexp.MustCompile(`href="(\.\./)*index\.html"`)
 			if !strings.Contains(navContent, s.DisplayName) {
 				errs = append(errs, fmt.Errorf("%s: navigation missing home link (%s)", htmlPath, s.DisplayName))
 			}
-			if !homeHrefRegex.MatchString(navContent) {
+			if !v.homeHrefRegex.MatchString(navContent) {
 				errs = append(errs, fmt.Errorf("%s: navigation missing home href to index.html", htmlPath))
 			}
 		} else {

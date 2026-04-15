@@ -1,7 +1,7 @@
 package substitution
 
 type Substituer interface {
-	PlaceHolder() string
+	Placeholder() string
 
 	Resolve() (string, error)
 }

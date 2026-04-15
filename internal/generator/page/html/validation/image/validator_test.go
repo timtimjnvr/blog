@@ -155,24 +155,3 @@ func TestValidator_SkipExternal(t *testing.T) {
 	}
 }
 
-func TestIsExternalURL(t *testing.T) {
-	tests := []struct {
-		url      string
-		expected bool
-	}{
-		{"http://example.com/image.png", true},
-		{"https://example.com/image.png", true},
-		{"../assets/image.png", false},
-		{"/assets/image.png", false},
-		{"image.png", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.url, func(t *testing.T) {
-			result := isExternalURL(tt.url)
-			if result != tt.expected {
-				t.Errorf("isExternalURL(%q) = %v, want %v", tt.url, result, tt.expected)
-			}
-		})
-	}
-}

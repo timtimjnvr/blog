@@ -263,6 +263,39 @@ func TestGenerator_Generate_NavigationBar(t *testing.T) {
 	})
 }
 
+// fakeMarkdownSubstituter is a test double for the markdown substitution.Substituer interface
+type fakeMarkdownSubstituter struct {
+	placeholder string
+	err         error
+}
+
+func (f fakeMarkdownSubstituter) Placeholder() string    { return f.placeholder }
+func (f fakeMarkdownSubstituter) Resolve() (string, error) { return "", f.err }
+
+func TestGenerator_Generate_MarkdownSubstitutionError(t *testing.T) {
+	fs := filesystem.NewMemoryFileSystem()
+	fs.AddFile("/content/page.md", []byte("# Title\n\n{{my-placeholder}}\n\nContent."))
+
+	config := styling.Config{
+		Elements: make(map[string]string),
+		Contexts: make(map[string]map[string]string),
+	}
+	mdSubs := mdsubstitution.NewRegistryWithSubstituters(
+		fakeMarkdownSubstituter{placeholder: "{{my-placeholder}}", err: fmt.Errorf("substitution failed")},
+	)
+	subs := substitution.NewRegistry("/build/page.html", "/content/page.md", nil, nil, nil, "")
+	vals := validation.NewRegistry(nil)
+	g := NewGenerator("/content/page.md", "/build/page.html", "/build", "", config, fs, mdSubs, subs, vals)
+
+	err := g.Generate()
+	if err == nil {
+		t.Fatal("Generate() expected error when markdown substitution fails, got nil")
+	}
+	if !strings.Contains(err.Error(), "substitution failed") {
+		t.Errorf("error should mention substitution failure, got %q", err.Error())
+	}
+}
+
 func TestGenerator_Validate(t *testing.T) {
 	t.Run("validate returns nil with empty registry", func(t *testing.T) {
 		fs := filesystem.NewMemoryFileSystem()

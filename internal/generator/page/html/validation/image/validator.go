@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
 	"regexp"
-	"strings"
 	"time"
+
+	"github.com/timtimjnvr/blog/internal/generator/page/html/validation/shared"
 )
 
 // Validator checks that all images in HTML are accessible
@@ -16,6 +16,7 @@ type Validator struct {
 	Timeout time.Duration
 	// SkipExternal skips validation of external URLs
 	SkipExternal bool
+	imgRegex     *regexp.Regexp
 }
 
 // NewValidator creates a new image validator with default settings
@@ -23,6 +24,7 @@ func NewValidator() *Validator {
 	return &Validator{
 		Timeout:      10 * time.Second,
 		SkipExternal: false,
+		imgRegex:     regexp.MustCompile(`<img[^>]+src="([^"]+)"`),
 	}
 }
 
@@ -31,8 +33,7 @@ func (v *Validator) Validate(htmlPath, buildDir string, content []byte) []error 
 	var errs []error
 
 	// Find all img src attributes
-	imgRegex := regexp.MustCompile(`<img[^>]+src="([^"]+)"`)
-	matches := imgRegex.FindAllSubmatch(content, -1)
+	matches := v.imgRegex.FindAllSubmatch(content, -1)
 
 	for _, match := range matches {
 		if len(match) < 2 {
@@ -41,7 +42,7 @@ func (v *Validator) Validate(htmlPath, buildDir string, content []byte) []error 
 
 		src := string(match[1])
 
-		if isExternalURL(src) {
+		if shared.IsExternalURL(src) {
 			if v.SkipExternal {
 				continue
 			}
@@ -56,11 +57,6 @@ func (v *Validator) Validate(htmlPath, buildDir string, content []byte) []error 
 	}
 
 	return errs
-}
-
-// isExternalURL checks if the URL is external (http/https)
-func isExternalURL(src string) bool {
-	return strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://")
 }
 
 // validateExternalImage checks if an external image URL is accessible
@@ -84,19 +80,7 @@ func (v *Validator) validateExternalImage(url string) error {
 
 // validateLocalImage checks if a local image file exists
 func (v *Validator) validateLocalImage(src, htmlPath, buildDir string) error {
-	var imagePath string
-
-	if strings.HasPrefix(src, "/") {
-		// Absolute path from build root
-		imagePath = filepath.Join(buildDir, src)
-	} else {
-		// Relative path from HTML file location
-		htmlDir := filepath.Dir(htmlPath)
-		imagePath = filepath.Join(htmlDir, src)
-	}
-
-	// Clean the path to resolve ../ etc
-	imagePath = filepath.Clean(imagePath)
+	imagePath := shared.ResolveLocalPath(src, htmlPath, buildDir)
 
 	if _, err := os.Stat(imagePath); os.IsNotExist(err) {
 		return err
