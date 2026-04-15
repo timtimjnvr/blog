@@ -64,7 +64,7 @@ func (v *Validator) Validate(htmlPath, buildDir string, content []byte) []error 
 				continue
 			}
 			if err := v.validateExternalLink(href); err != nil {
-				errs = append(errs, fmt.Errorf("%s: external link not accessible: %s (%v)", htmlPath, href, err))
+				errs = append(errs, fmt.Errorf("%s: external link not accessible: %s (%w)", htmlPath, href, err))
 			}
 		} else {
 			if err := v.validateLocalLink(href, htmlPath, buildDir); err != nil {

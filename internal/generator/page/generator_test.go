@@ -5,8 +5,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/timtimjnvr/blog/internal/generator/page/filesystem"
 	"github.com/timtimjnvr/blog/internal/generator/page/html/substitution"
+	htmlsubstitution "github.com/timtimjnvr/blog/internal/generator/page/html/substitution"
 	"github.com/timtimjnvr/blog/internal/generator/page/html/validation"
 	mdsubstitution "github.com/timtimjnvr/blog/internal/generator/page/markdown/substitution"
 	"github.com/timtimjnvr/blog/internal/generator/page/styling"
@@ -19,9 +21,11 @@ func newTestGenerator(t *testing.T, markdownPath, htmlOutputPath, buildDir, sect
 		Elements: make(map[string]string),
 		Contexts: make(map[string]map[string]string),
 	}
-	mdSubs := mdsubstitution.NewRegistry(markdownPath)
-	subs := substitution.NewRegistry(htmlOutputPath, markdownPath, nil, nil, nil, sectionName)
-	vals := validation.NewRegistry(nil)
+	var (
+		mdSubs = mdsubstitution.NewRegistry(markdownPath)
+		subs   = substitution.NewRegistry(htmlOutputPath, markdownPath, nil, nil, nil, sectionName)
+		vals   = validation.NewRegistryWithValidators()
+	)
 	return NewGenerator(markdownPath, htmlOutputPath, buildDir, sectionName, config, fs, mdSubs, subs, vals)
 }
 
@@ -168,26 +172,83 @@ func TestGenerator_Generate_WriteFileError(t *testing.T) {
 	}
 }
 
-func TestGenerator_Generate_SubstitutionError(t *testing.T) {
+type mdSubsMock struct {
+	err error
+}
+
+func (sm mdSubsMock) PlaceHolder() string {
+	return ""
+}
+
+func (sm mdSubsMock) Resolve() (string, error) {
+	return "", sm.err
+}
+
+func TestGenerator_Generate_MarkdownSubstitutionError(t *testing.T) {
+	// given
+	expectedErr := fmt.Errorf("this is a markdown substitution error")
+	sm := mdSubsMock{err: expectedErr}
+
+	// setup
 	fs := filesystem.NewMemoryFileSystem()
-	// Markdown without h1 will cause title substitution to fail
 	fs.AddFile("/content/notitle.md", []byte("No heading here, just text."))
+	g := NewGenerator(
+		"/content/notitle.md",
+		"/build/notitle.html",
+		"/build",
+		"",
+		styling.Config{},
+		fs,
+		mdsubstitution.NewRegistryWithSubstituters(sm),
+		htmlsubstitution.NewRegistryWithSubstituters(),
+		validation.NewRegistryWithValidators(),
+	)
 
-	config := styling.Config{
-		Elements: make(map[string]string),
-		Contexts: make(map[string]map[string]string),
-	}
-	subs := substitution.NewRegistry("/build/notitle.html", "/content/notitle.md", nil, nil, nil, "")
-	vals := validation.NewRegistry(nil)
-	g := NewGenerator("/content/notitle.md", "/build/notitle.html", "/build", "", config, fs, mdsubstitution.NewRegistry("/content/notitle.md"), subs, vals)
-
+	// test
 	err := g.Generate()
-	if err == nil {
-		t.Fatal("Generate() expected error when title substitution fails, got nil")
-	}
-	if !strings.Contains(err.Error(), "template") {
-		t.Errorf("error should mention template projection, got %q", err.Error())
-	}
+
+	// expect
+	assert.ErrorIs(t, err, expectedErr)
+}
+
+type htmlSubsMock struct {
+	err error
+}
+
+func (sm htmlSubsMock) Placeholder() string {
+	return ""
+}
+
+func (sm htmlSubsMock) Resolve(content string) (string, error) {
+	return "", sm.err
+}
+
+func TestGenerator_Generate_HTMLSubstitutionError(t *testing.T) {
+	// given
+	expectedErr := fmt.Errorf("this is an html substitution error")
+	sm := htmlSubsMock{err: expectedErr}
+
+	// setup
+	htmlSubs := htmlsubstitution.NewRegistryWithSubstituters(sm)
+	fs := filesystem.NewMemoryFileSystem()
+	fs.AddFile("/content/notitle.md", []byte("No heading here, just text."))
+	g := NewGenerator(
+		"/content/notitle.md",
+		"/build/notitle.html",
+		"/build",
+		"",
+		styling.Config{},
+		fs,
+		mdsubstitution.NewRegistryWithSubstituters(),
+		htmlSubs,
+		validation.NewRegistryWithValidators(),
+	)
+
+	// test
+	err := g.Generate()
+
+	// expect
+	assert.ErrorIs(t, err, expectedErr)
 }
 
 func TestGenerator_Generate_NavigationBar(t *testing.T) {

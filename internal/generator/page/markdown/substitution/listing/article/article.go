@@ -63,9 +63,9 @@ func (la ListPageArticles) ListPrinters() ([]Article, error) {
 }
 
 func extractTitle(data []byte) string {
-	for _, line := range strings.Split(string(data), "\n") {
-		if strings.HasPrefix(line, "# ") {
-			return strings.TrimPrefix(line, "# ")
+	for line := range strings.SplitSeq(string(data), "\n") {
+		if after, ok := strings.CutPrefix(line, "# "); ok {
+			return after
 		}
 	}
 	return ""
