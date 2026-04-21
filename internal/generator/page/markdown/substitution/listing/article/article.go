@@ -5,15 +5,22 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
+
+	"github.com/timtimjnvr/blog/internal/generator/page/markdown/metadata"
 )
 
 type Article struct {
-	name     string
-	filePath string
+	name      string
+	filePath  string
+	createdAt string
 }
 
 func (a Article) Print() string {
+	if a.createdAt != "" {
+		return fmt.Sprintf("- [%s](%s) · *%s*", a.name, a.filePath, a.createdAt)
+	}
 	return fmt.Sprintf("- [%s](%s)", a.name, a.filePath)
 }
 
@@ -51,13 +58,18 @@ func (la ListPageArticles) ListPrinters() ([]Article, error) {
 			return nil
 		}
 		articles = append(articles, Article{
-			name:     name,
-			filePath: filepath.Base(path),
+			name:      name,
+			filePath:  filepath.Base(path),
+			createdAt: metadata.Extract(data).CreationDate,
 		})
 		return nil
 	}); err != nil {
 		return []Article{}, err
 	}
+
+	sort.Slice(articles, func(i, j int) bool {
+		return articles[i].createdAt > articles[j].createdAt
+	})
 
 	return articles, nil
 }
