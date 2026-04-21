@@ -24,12 +24,12 @@ type memFileInfo struct {
 	isDir bool
 }
 
-func (fi memFileInfo) Name() string      { return fi.name }
-func (fi memFileInfo) Size() int64       { return fi.size }
-func (fi memFileInfo) Mode() os.FileMode { return 0644 }
+func (fi memFileInfo) Name() string       { return fi.name }
+func (fi memFileInfo) Size() int64        { return fi.size }
+func (fi memFileInfo) Mode() os.FileMode  { return 0644 }
 func (fi memFileInfo) ModTime() time.Time { return time.Time{} }
-func (fi memFileInfo) IsDir() bool       { return fi.isDir }
-func (fi memFileInfo) Sys() interface{}  { return nil }
+func (fi memFileInfo) IsDir() bool        { return fi.isDir }
+func (fi memFileInfo) Sys() interface{}   { return nil }
 
 func NewMemoryFileSystem() *MemoryFileSystem {
 	return &MemoryFileSystem{

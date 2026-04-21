@@ -184,33 +184,6 @@ func (sm mdSubsMock) Resolve() (string, error) {
 	return "", sm.err
 }
 
-func TestGenerator_Generate_MarkdownSubstitutionError(t *testing.T) {
-	// given
-	expectedErr := fmt.Errorf("this is a markdown substitution error")
-	sm := mdSubsMock{err: expectedErr}
-
-	// setup
-	fs := filesystem.NewMemoryFileSystem()
-	fs.AddFile("/content/notitle.md", []byte("No heading here, just text."))
-	g := NewGenerator(
-		"/content/notitle.md",
-		"/build/notitle.html",
-		"/build",
-		"",
-		styling.Config{},
-		fs,
-		mdsubstitution.NewRegistryWithSubstituters(sm),
-		htmlsubstitution.NewRegistryWithSubstituters(),
-		validation.NewRegistryWithValidators(),
-	)
-
-	// test
-	err := g.Generate()
-
-	// expect
-	assert.ErrorIs(t, err, expectedErr)
-}
-
 type htmlSubsMock struct {
 	err error
 }
@@ -330,7 +303,7 @@ type fakeMarkdownSubstituter struct {
 	err         error
 }
 
-func (f fakeMarkdownSubstituter) Placeholder() string    { return f.placeholder }
+func (f fakeMarkdownSubstituter) Placeholder() string      { return f.placeholder }
 func (f fakeMarkdownSubstituter) Resolve() (string, error) { return "", f.err }
 
 func TestGenerator_Generate_MarkdownSubstitutionError(t *testing.T) {

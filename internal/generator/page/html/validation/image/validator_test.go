@@ -154,4 +154,3 @@ func TestValidator_SkipExternal(t *testing.T) {
 		t.Errorf("expected no errors when SkipExternal=true, got %v", errs)
 	}
 }
-

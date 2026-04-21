@@ -43,7 +43,6 @@ func TestNewRegistryWithValidators(t *testing.T) {
 	}
 }
 
-
 func TestRegistry_Register(t *testing.T) {
 	r := NewRegistryWithValidators()
 	v := fakeValidator{validateFunc: func(string, string, []byte) []error { return nil }}
