@@ -1,3 +1,4 @@
+<!-- creation-date: 2026-04-21 -->
 # Deuxième article
 
 Ceci est un deuxième article pour démontrer la liste d'articles.

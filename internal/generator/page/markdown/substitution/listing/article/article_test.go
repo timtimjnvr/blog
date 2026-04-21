@@ -7,9 +7,28 @@ import (
 )
 
 func TestArticlePrint(t *testing.T) {
-	a := Article{name: "Hello", filePath: "hello.md"}
-	if got := a.Print(); got != "- [Hello](hello.md)" {
-		t.Errorf("Print() = %q, want %q", got, "- [Hello](hello.md)")
+	tests := []struct {
+		name string
+		a    Article
+		want string
+	}{
+		{
+			name: "no date",
+			a:    Article{name: "Hello", filePath: "hello.md"},
+			want: "- [Hello](hello.md)",
+		},
+		{
+			name: "with date",
+			a:    Article{name: "Hello", filePath: "hello.md", createdAt: "2024-03-15"},
+			want: "- [Hello](hello.md) · *2024-03-15*",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.a.Print(); got != tt.want {
+				t.Errorf("Print() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
 
