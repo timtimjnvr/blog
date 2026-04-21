@@ -1,13 +1,17 @@
 package main
 
 import (
+	"flag"
 	"log"
 
 	"github.com/timtimjnvr/blog/internal/generator/site"
 )
 
 func main() {
-	gen, err := site.NewGenerator()
+	skipURLValidation := flag.Bool("skip-url-validation", false, "Skip external URL validation")
+	flag.Parse()
+
+	gen, err := site.NewGenerator(site.WithSkipURLValidation(*skipURLValidation))
 	if err != nil {
 		log.Fatalf("Could not create the site generator: %v\n", err)
 	}

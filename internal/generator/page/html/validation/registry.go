@@ -6,6 +6,7 @@ import (
 	"github.com/timtimjnvr/blog/internal/generator/page/html/validation/image"
 	"github.com/timtimjnvr/blog/internal/generator/page/html/validation/link"
 	"github.com/timtimjnvr/blog/internal/generator/page/html/validation/navigation"
+	"github.com/timtimjnvr/blog/internal/generator/page/html/validation/script"
 	"github.com/timtimjnvr/blog/internal/generator/section"
 )
 
@@ -15,11 +16,15 @@ type Registry struct {
 }
 
 // NewRegistry creates a validation registry with the navigation validator configured for the given sections
-func NewRegistry(sections []section.Section) *Registry {
+func NewRegistry(sections []section.Section, skipURLValidation bool) *Registry {
+	lv := link.NewValidator()
+	lv.SkipExternal = skipURLValidation
+	iv := image.NewValidator()
+	iv.SkipExternal = skipURLValidation
 	return &Registry{
 		validators: []Validator{
-			link.NewValidator(),
-			image.NewValidator(),
+			lv,
+			iv,
 			navigation.NewValidator(sections),
 		},
 	}
@@ -29,6 +34,22 @@ func NewRegistry(sections []section.Section) *Registry {
 func NewRegistryWithValidators(validators ...Validator) *Registry {
 	return &Registry{
 		validators: validators,
+	}
+}
+
+// NewDefaultRegistry creates a validation registry with default validators (image, script, link, navigation)
+func NewDefaultRegistry(sections []section.Section, skipURLValidation bool) *Registry {
+	lv := link.NewValidator()
+	lv.SkipExternal = skipURLValidation
+	iv := image.NewValidator()
+	iv.SkipExternal = skipURLValidation
+	return &Registry{
+		validators: []Validator{
+			iv,
+			script.NewValidator(),
+			lv,
+			navigation.NewValidator(sections),
+		},
 	}
 }
 

@@ -15,7 +15,9 @@ type (
 		Validate() error
 	}
 
-	pageGeneratorFactory func(sourceMDPath, destinationHTMLPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []section.Section) PageGenerator
+	pageGeneratorFactory func(sourceMDPath, destinationHTMLPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []section.Section, skipURLValidation bool) PageGenerator
+
+	Option func(*Generator)
 )
 
 type generatorOption func(*Generator)
@@ -36,6 +38,7 @@ type Generator struct {
 	buildDir                  string
 	scriptsDir                string
 	scriptsOutDir             string
+	skipURLValidation         bool
 	pageGeneratorFactory      pageGeneratorFactory
 	sections                  []section.Section
 	pagesGenerators           []PageGenerator
@@ -43,7 +46,12 @@ type Generator struct {
 	fs                        filesystem.FileSystem
 }
 
-func NewGenerator(opts ...generatorOption) (*Generator, error) {
+// WithSkipURLValidation returns an Option that disables external URL validation.
+func WithSkipURLValidation(skip bool) Option {
+	return func(g *Generator) { g.skipURLValidation = skip }
+}
+
+func NewGenerator(opts ...Option) (*Generator, error) {
 	g := &Generator{
 		contentDir:                "./content/markdown",
 		buildDir:                  "./target/build",

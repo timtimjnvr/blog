@@ -120,14 +120,14 @@ func TestWithBuilders(t *testing.T) {
 
 func TestWithPageGeneratorFactory(t *testing.T) {
 	called := false
-	factory := func(markdownPath, htmlOutPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []section.Section) PageGenerator {
+	factory := func(markdownPath, htmlOutPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []section.Section, skipURLValidation bool) PageGenerator {
 		called = true
 		return &fakePageGenerator{}
 	}
 
 	g, _ := NewGenerator()
 	g.withPageGeneratorFactory(factory)
-	g.pageGeneratorFactory("test.md", "test.html", "/build", "", newPathResolver{}, newPathResolver{}, nil, nil)
+	g.pageGeneratorFactory("test.md", "test.html", "/build", "", newPathResolver{}, newPathResolver{}, nil, nil, false)
 
 	if !called {
 		t.Error("custom factory should have been called")
@@ -335,7 +335,7 @@ func TestGenerate_PageGeneratorError(t *testing.T) {
 		"index.md": "# Title",
 	})
 
-	factory := func(markdownPath, htmlOutPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []section.Section) PageGenerator {
+	factory := func(markdownPath, htmlOutPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []section.Section, skipURLValidation bool) PageGenerator {
 		return &fakePageGenerator{generateErr: fmt.Errorf("page generation failed")}
 	}
 
@@ -360,7 +360,7 @@ func TestValidate_ValidationError(t *testing.T) {
 		"index.md": "# Title",
 	})
 
-	factory := func(markdownPath, htmlOutPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []section.Section) PageGenerator {
+	factory := func(markdownPath, htmlOutPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []section.Section, skipURLValidation bool) PageGenerator {
 		return &fakePageGenerator{validateErr: fmt.Errorf("validation failed")}
 	}
 

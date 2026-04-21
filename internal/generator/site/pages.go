@@ -50,7 +50,7 @@ func (g *Generator) generatePages() error {
 		}
 
 		htmlOutputPath := filepath.Join(g.buildDir, strings.TrimSuffix(pageFilePathRelToContentDir, ".md")+".html")
-		g.pagesGenerators = append(g.pagesGenerators, g.pageGeneratorFactory(markDownFilePath, htmlOutputPath, g.buildDir, pageSection, assetsPathTranslater, linksPathTranslater, g.stylingConfig, g.sections))
+		g.pagesGenerators = append(g.pagesGenerators, g.pageGeneratorFactory(markDownFilePath, htmlOutputPath, g.buildDir, pageSection, assetsPathTranslater, linksPathTranslater, g.stylingConfig, g.sections, g.skipURLValidation))
 		return nil
 	})
 
@@ -73,7 +73,7 @@ func (g *Generator) generatePages() error {
 	return nil
 }
 
-func defaultPageGeneratorFactory(sourceMDPath, destinationHTMLPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []section.Section) PageGenerator {
+func defaultPageGeneratorFactory(sourceMDPath, destinationHTMLPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []section.Section, skipURLValidation bool) PageGenerator {
 	var config styling.Config
 	if stylingConfig != nil {
 		config = *stylingConfig
@@ -83,7 +83,7 @@ func defaultPageGeneratorFactory(sourceMDPath, destinationHTMLPath, buildDir, pa
 		fs                    = filesystem.NewOSFileSystem()
 		markdownSubstitutions = mdsubstitutions.NewRegistry(sourceMDPath)
 		HTMLSubstitutions     = htmlsubstitutions.NewRegistry(destinationHTMLPath, sourceMDPath, assetsPathTranslater, linksPathTranslater, sections, pageSection)
-		validations           = validation.NewRegistry(sections)
+		validations           = validation.NewRegistry(sections, skipURLValidation)
 	)
 
 	return page.NewGenerator(sourceMDPath, destinationHTMLPath, buildDir, pageSection, config, fs, markdownSubstitutions, HTMLSubstitutions, validations)
