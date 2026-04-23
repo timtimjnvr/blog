@@ -82,7 +82,13 @@ func (v *Validator) validateExternalLink(url string) error {
 		Timeout: v.Timeout,
 	}
 
-	resp, err := client.Head(url)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; link-validator/1.0)")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}

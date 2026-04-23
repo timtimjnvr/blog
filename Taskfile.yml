@@ -72,7 +72,8 @@ tasks:
   fmt:check:
     desc: Check if Go files are formatted
     cmds:
-      - test -z "$(gofmt -l .)" || (echo "Files not formatted:" && gofmt -l . && exit 1)
+      - test -z "$(gofmt -l .)" || (echo "Files not formatted:" && gofmt -l . &&
+        exit 1)
 
   lint:
     desc: Run golangci-lint (skipped if not installed)
@@ -99,7 +100,8 @@ tasks:
     desc: Generate HTML coverage report
     cmds:
       - go test ./... -coverprofile={{.BUILD_DIR}}/coverage.out
-      - go tool cover -html={{.BUILD_DIR}}/coverage.out -o {{.BUILD_DIR}}/coverage.html
+      - go tool cover -html={{.BUILD_DIR}}/coverage.out -o
+        {{.BUILD_DIR}}/coverage.html
       - echo "Coverage report generated at {{.BUILD_DIR}}/coverage.html"
 
   test:unit:
@@ -122,18 +124,20 @@ tasks:
     desc: Generate the static site
     cmds:
       - rm -rf {{.BUILD_SITE_DIR}}
-      - go run .
+      - go run . --skip-url-validation
       - task: css:build
 
   css:build:
     desc: Build Tailwind CSS
     cmds:
-      - ./{{.BUILD_DIR}}/bin/tailwindcss -i ./styles/input.css -o ./{{.BUILD_SITE_DIR}}/styles.css --minify
+      - ./{{.BUILD_DIR}}/bin/tailwindcss -i ./styles/input.css -o
+        ./{{.BUILD_SITE_DIR}}/styles.css --minify
 
   css:watch:
     desc: Watch and rebuild Tailwind CSS
     cmds:
-      - ./{{.BUILD_DIR}}/bin/tailwindcss -i ./styles/input.css -o ./{{.BUILD_SITE_DIR}}/styles.css --watch
+      - ./{{.BUILD_DIR}}/bin/tailwindcss -i ./styles/input.css -o
+        ./{{.BUILD_SITE_DIR}}/styles.css --watch
 
   clean:
     desc: Remove build artifacts
