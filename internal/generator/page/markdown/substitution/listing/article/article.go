@@ -19,7 +19,7 @@ type Article struct {
 
 func (a Article) Print() string {
 	if a.createdAt != "" {
-		return fmt.Sprintf("- [%s](%s) · *%s*", a.name, a.filePath, a.createdAt)
+		return fmt.Sprintf(`- [%s](%s) · <span class="text-xs">*%s*</span>`, a.name, a.filePath, a.createdAt)
 	}
 	return fmt.Sprintf("- [%s](%s)", a.name, a.filePath)
 }

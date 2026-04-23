@@ -8,6 +8,7 @@ import (
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer"
+	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/util"
 )
 
@@ -42,6 +43,8 @@ func NewConverter(styleConfig *styling.Config, context string) *Converter {
 			goldmark.WithExtensions(extension.GFM),
 			goldmark.WithParserOptions(parserOpts...),
 			goldmark.WithRendererOptions(
+				// This allows HTML content injected during markdown substitutions to be used as it is (for article listing)
+				html.WithUnsafe(),
 				renderer.WithNodeRenderers(
 					util.Prioritized(&HeadingRenderer{}, 100),
 				),
