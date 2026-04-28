@@ -3,14 +3,13 @@ package markdown
 import (
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewConverter(t *testing.T) {
-	converter := NewConverter()
-	if converter == nil {
-		t.Fatal("NewConverter returned nil")
-		return
-	}
+	converter, err := NewConverter()
+	require.Nil(t, err)
 	if converter.md == nil {
 		t.Fatal("converter.md is nil")
 	}
@@ -84,7 +83,8 @@ func TestConverter_Convert(t *testing.T) {
 		},
 	}
 
-	converter := NewConverter()
+	converter, err := NewConverter()
+	require.Nil(t, err)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -103,7 +103,8 @@ func TestConverter_Convert(t *testing.T) {
 }
 
 func TestConverter_Convert_ReturnsValidHTML(t *testing.T) {
-	converter := NewConverter()
+	converter, err := NewConverter()
+	require.Nil(t, err)
 
 	input := "# Title\n\nParagraph with **bold** and *italic*.\n\n- List item"
 	result, err := converter.Convert([]byte(input))
@@ -111,12 +112,10 @@ func TestConverter_Convert_ReturnsValidHTML(t *testing.T) {
 		t.Fatalf("Convert() error = %v", err)
 	}
 
-	// Check that result is not empty
 	if len(result) == 0 {
 		t.Error("Convert() returned empty result")
 	}
 
-	// Check basic structure
 	if !strings.Contains(result, `<h1 id="title">`) {
 		t.Error("missing h1 tag")
 	}
@@ -128,8 +127,19 @@ func TestConverter_Convert_ReturnsValidHTML(t *testing.T) {
 	}
 }
 
+func TestConverter_Convert_PropagatesError(t *testing.T) {
+	converter, err := NewConverter()
+	require.Nil(t, err)
+
+	_, err = converter.Convert([]byte("```d2\n{\n```"))
+	if err == nil {
+		t.Fatal("Convert() should return an error on invalid d2 source, got nil")
+	}
+}
+
 func TestConverter_InlineAttributes(t *testing.T) {
-	converter := NewConverter()
+	converter, err := NewConverter()
+	require.Nil(t, err)
 
 	tests := []struct {
 		name     string

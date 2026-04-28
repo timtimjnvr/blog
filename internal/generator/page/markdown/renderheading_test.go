@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestHeadingRenderer_AllLevels(t *testing.T) {
-	converter := NewConverter()
+	converter, err := NewConverter()
+	require.Nil(t, err)
 
 	for level := 1; level <= 6; level++ {
 		t.Run(fmt.Sprintf("h%d", level), func(t *testing.T) {
@@ -35,7 +38,8 @@ func TestHeadingRenderer_AllLevels(t *testing.T) {
 }
 
 func TestHeadingRenderer_SlugifiedID(t *testing.T) {
-	converter := NewConverter()
+	converter, err := NewConverter()
+	require.Nil(t, err)
 
 	tests := []struct {
 		name       string
@@ -80,7 +84,8 @@ func TestHeadingRenderer_SlugifiedID(t *testing.T) {
 }
 
 func TestHeadingRenderer_DuplicateHeadings(t *testing.T) {
-	converter := NewConverter()
+	converter, err := NewConverter()
+	require.Nil(t, err)
 
 	input := "## Section\n\nSome text.\n\n## Section\n\nMore text.\n\n## Section"
 	result, err := converter.Convert([]byte(input))
@@ -104,7 +109,8 @@ func TestHeadingRenderer_DuplicateHeadings(t *testing.T) {
 }
 
 func TestHeadingRenderer_CustomID(t *testing.T) {
-	converter := NewConverter()
+	converter, err := NewConverter()
+	require.Nil(t, err)
 
 	input := "## Section {#custom-id}"
 	result, err := converter.Convert([]byte(input))
@@ -121,7 +127,8 @@ func TestHeadingRenderer_CustomID(t *testing.T) {
 }
 
 func TestHeadingRenderer_AnchorStructure(t *testing.T) {
-	converter := NewConverter()
+	converter, err := NewConverter()
+	require.Nil(t, err)
 
 	input := "## My Section"
 	result, err := converter.Convert([]byte(input))

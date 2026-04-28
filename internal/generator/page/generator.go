@@ -66,10 +66,15 @@ func (g *Generator) Generate() error {
 		return fmt.Errorf("failed to project content inside the page template: %w", err)
 	}
 
-	// Convert marddown to HTML
-	htmlContent, err := markdown.NewConverter().Convert([]byte(markdDownStringSourceContent))
+	converter, err := markdown.NewConverter()
 	if err != nil {
-		return fmt.Errorf("failed to convert markdown content: %w", err)
+		return fmt.Errorf("failed to create converter: %w", err)
+	}
+
+	// Convert marddown to HTML
+	htmlContent, err := converter.Convert([]byte(markdDownStringSourceContent))
+	if err != nil {
+		return fmt.Errorf("failed to Convert: %w", err)
 	}
 
 	// Project result inside the page template
