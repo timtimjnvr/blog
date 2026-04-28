@@ -70,8 +70,12 @@ func (g *Generator) Generate() error {
 		return fmt.Errorf("failed to project content inside the page template: %w", err)
 	}
 
-	// Convert marddown to HTML
-	htmlContent, err := markdown.NewConverter(&g.stylingConfig, g.sectionName).Convert([]byte(markdDownStringSourceContent))
+	// Convert markdown to HTML
+	converter, err := markdown.NewConverter(&g.stylingConfig, g.sectionName)
+	if err != nil {
+		return fmt.Errorf("failed to create markdown converter: %w", err)
+	}
+	htmlContent, err := converter.Convert([]byte(markdDownStringSourceContent))
 	if err != nil {
 		return fmt.Errorf("failed to convert markdown content: %w", err)
 	}

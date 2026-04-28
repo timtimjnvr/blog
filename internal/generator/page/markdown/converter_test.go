@@ -7,12 +7,17 @@ import (
 	"github.com/timtimjnvr/blog/internal/generator/page/styling"
 )
 
-func TestNewConverter(t *testing.T) {
-	converter := NewConverter(nil, "")
-	if converter == nil {
-		t.Fatal("NewConverter returned nil")
-		return
+func mustNewConverter(t *testing.T, config *styling.Config, context string) *Converter {
+	t.Helper()
+	c, err := NewConverter(config, context)
+	if err != nil {
+		t.Fatalf("NewConverter() error = %v", err)
 	}
+	return c
+}
+
+func TestNewConverter(t *testing.T) {
+	converter := mustNewConverter(t, nil, "")
 	if converter.md == nil {
 		t.Fatal("converter.md is nil")
 	}
@@ -86,7 +91,7 @@ func TestConverter_Convert(t *testing.T) {
 		},
 	}
 
-	converter := NewConverter(nil, "")
+	converter := mustNewConverter(t, nil, "")
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -105,7 +110,7 @@ func TestConverter_Convert(t *testing.T) {
 }
 
 func TestConverter_Convert_ReturnsValidHTML(t *testing.T) {
-	converter := NewConverter(nil, "")
+	converter := mustNewConverter(t, nil, "")
 
 	input := "# Title\n\nParagraph with **bold** and *italic*.\n\n- List item"
 	result, err := converter.Convert([]byte(input))
@@ -113,12 +118,10 @@ func TestConverter_Convert_ReturnsValidHTML(t *testing.T) {
 		t.Fatalf("Convert() error = %v", err)
 	}
 
-	// Check that result is not empty
 	if len(result) == 0 {
 		t.Error("Convert() returned empty result")
 	}
 
-	// Check basic structure
 	if !strings.Contains(result, `<h1 id="title">`) {
 		t.Error("missing h1 tag")
 	}
@@ -130,8 +133,17 @@ func TestConverter_Convert_ReturnsValidHTML(t *testing.T) {
 	}
 }
 
+func TestConverter_Convert_PropagatesError(t *testing.T) {
+	converter := mustNewConverter(t, nil, "")
+
+	_, err := converter.Convert([]byte("```d2\n{\n```"))
+	if err == nil {
+		t.Fatal("Convert() should return an error on invalid d2 source, got nil")
+	}
+}
+
 func TestConverter_InlineAttributes(t *testing.T) {
-	converter := NewConverter(nil, "")
+	converter := mustNewConverter(t, nil, "")
 
 	tests := []struct {
 		name     string
@@ -182,7 +194,6 @@ func TestConverter_InlineAttributes(t *testing.T) {
 }
 
 func TestConverter_InlineAttributesOverrideConfig(t *testing.T) {
-	// Test that inline attributes take precedence over styles.json config
 	config := &styling.Config{
 		Elements: map[string]string{
 			"heading1": "config-class",
@@ -190,9 +201,8 @@ func TestConverter_InlineAttributesOverrideConfig(t *testing.T) {
 		Contexts: make(map[string]map[string]string),
 	}
 
-	converter := NewConverter(config, "")
+	converter := mustNewConverter(t, config, "")
 
-	// Inline attribute should override config
 	input := "# Title {.inline-class}"
 	result, err := converter.Convert([]byte(input))
 	if err != nil {
@@ -213,7 +223,7 @@ func TestConverter_ConfigAppliedWithoutInlineAttributes(t *testing.T) {
 		Contexts: make(map[string]map[string]string),
 	}
 
-	converter := NewConverter(config, "")
+	converter := mustNewConverter(t, config, "")
 
 	input := "# Title\n\n[Link](https://example.com)"
 	result, err := converter.Convert([]byte(input))
@@ -242,7 +252,7 @@ func TestConverter_ContextSpecificStyling(t *testing.T) {
 	}
 
 	t.Run("uses global style without context", func(t *testing.T) {
-		converter := NewConverter(config, "")
+		converter := mustNewConverter(t, config, "")
 		result, err := converter.Convert([]byte("# Title"))
 		if err != nil {
 			t.Fatalf("Convert() error = %v", err)
@@ -253,7 +263,7 @@ func TestConverter_ContextSpecificStyling(t *testing.T) {
 	})
 
 	t.Run("uses context style with post context", func(t *testing.T) {
-		converter := NewConverter(config, "post")
+		converter := mustNewConverter(t, config, "post")
 		result, err := converter.Convert([]byte("# Title"))
 		if err != nil {
 			t.Fatalf("Convert() error = %v", err)

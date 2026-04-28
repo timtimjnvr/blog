@@ -7,7 +7,7 @@ import (
 )
 
 func TestHeadingRenderer_AllLevels(t *testing.T) {
-	converter := NewConverter(nil, "")
+	converter := mustNewConverter(t, nil, "")
 
 	for level := 1; level <= 6; level++ {
 		t.Run(fmt.Sprintf("h%d", level), func(t *testing.T) {
@@ -35,7 +35,7 @@ func TestHeadingRenderer_AllLevels(t *testing.T) {
 }
 
 func TestHeadingRenderer_SlugifiedID(t *testing.T) {
-	converter := NewConverter(nil, "")
+	converter := mustNewConverter(t, nil, "")
 
 	tests := []struct {
 		name       string
@@ -80,7 +80,7 @@ func TestHeadingRenderer_SlugifiedID(t *testing.T) {
 }
 
 func TestHeadingRenderer_DuplicateHeadings(t *testing.T) {
-	converter := NewConverter(nil, "")
+	converter := mustNewConverter(t, nil, "")
 
 	input := "## Section\n\nSome text.\n\n## Section\n\nMore text.\n\n## Section"
 	result, err := converter.Convert([]byte(input))
@@ -104,7 +104,7 @@ func TestHeadingRenderer_DuplicateHeadings(t *testing.T) {
 }
 
 func TestHeadingRenderer_CustomID(t *testing.T) {
-	converter := NewConverter(nil, "")
+	converter := mustNewConverter(t, nil, "")
 
 	input := "## Section {#custom-id}"
 	result, err := converter.Convert([]byte(input))
@@ -121,7 +121,7 @@ func TestHeadingRenderer_CustomID(t *testing.T) {
 }
 
 func TestHeadingRenderer_AnchorStructure(t *testing.T) {
-	converter := NewConverter(nil, "")
+	converter := mustNewConverter(t, nil, "")
 
 	input := "## My Section"
 	result, err := converter.Convert([]byte(input))
