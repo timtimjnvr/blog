@@ -8,33 +8,21 @@ A static site generator built in Go.
 * [Task](https://taskfile.dev/)
 * [browser-sync](https://browsersync.io/) (optional, for `dev` live reload)
 
-## Setup
-
-```bash
-task setup
-```
-
-## Quick Start
-
-```bash
-# Generate the site
-task generate
-```
-
-The generated site will be in the `target/build/` directory.
-
-## Available Tasks
-
-Run `task --list` to see all available tasks.
-
 ## Development
 
 ```bash
-# Full validation before committing
+# Setup
+task setup
+
+# Code generator validation
 task validate
 
-# Generate and preview site locally
+# Generate site
+task validate
+
+# Generate and serve site locally
 task dev
+```
 
 ## Project Structure
 
