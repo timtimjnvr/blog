@@ -64,7 +64,6 @@ tasks:
       - task: fmt:check
       - task: lint
       - task: test
-      - task: build
 
   fmt:
     desc: Format all Go files
