@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/timtimjnvr/blog/internal/generator/page/styling"
 	"github.com/timtimjnvr/blog/internal/generator/section"
 )
 
@@ -38,11 +37,6 @@ func (g *Generator) withScriptsDir(dir string) *Generator {
 	return g
 }
 
-func (g *Generator) withStylingConfigPath(path string) *Generator {
-	g.optionalStylingConfigPath = path
-	return g
-}
-
 func setupTestContent(t *testing.T, files map[string]string) (contentDir, buildDir string) {
 	t.Helper()
 	contentDir = t.TempDir()
@@ -64,8 +58,7 @@ func setupTestContent(t *testing.T, files map[string]string) (contentDir, buildD
 func createTestGenerator(contentDir, buildDir string) *Generator {
 	g, _ := NewGenerator()
 	g.withContentDir(contentDir).
-		withBuildDir(buildDir).
-		withStylingConfigPath("")
+		withBuildDir(buildDir)
 	return g
 }
 
@@ -84,10 +77,6 @@ func TestNewGenerator(t *testing.T) {
 	if g.scriptsDir != "./scripts" {
 		t.Errorf("scriptsDir = %q, want %q", g.scriptsDir, "./scripts")
 	}
-
-	if g.optionalStylingConfigPath != "./styles/styles.json" {
-		t.Errorf("optionalStylingConfigPath = %q, want %q", g.optionalStylingConfigPath, "./styles/styles.json")
-	}
 	if g.pageGeneratorFactory == nil {
 		t.Error("pageGeneratorFactory should not be nil")
 	}
@@ -98,8 +87,7 @@ func TestWithBuilders(t *testing.T) {
 	g.withContentDir("/content").
 		withBuildDir("/build").
 		withAssetsDir("/assets").
-		withScriptsDir("/scripts").
-		withStylingConfigPath("/styles.json")
+		withScriptsDir("/scripts")
 
 	if g.contentDir != "/content" {
 		t.Errorf("contentDir = %q, want %q", g.contentDir, "/content")
@@ -113,21 +101,18 @@ func TestWithBuilders(t *testing.T) {
 	if g.scriptsDir != "/scripts" {
 		t.Errorf("scriptsDir = %q, want %q", g.scriptsDir, "/scripts")
 	}
-	if g.optionalStylingConfigPath != "/styles.json" {
-		t.Errorf("optionalStylingConfigPath = %q, want %q", g.optionalStylingConfigPath, "/styles.json")
-	}
 }
 
 func TestWithPageGeneratorFactory(t *testing.T) {
 	called := false
-	factory := func(markdownPath, htmlOutPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []section.Section, skipURLValidation bool) PageGenerator {
+	factory := func(markdownPath, htmlOutPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, sections []section.Section, skipURLValidation bool) PageGenerator {
 		called = true
 		return &fakePageGenerator{}
 	}
 
 	g, _ := NewGenerator()
 	g.withPageGeneratorFactory(factory)
-	g.pageGeneratorFactory("test.md", "test.html", "/build", "", newPathResolver{}, newPathResolver{}, nil, nil, false)
+	g.pageGeneratorFactory("test.md", "test.html", "/build", "", newPathResolver{}, newPathResolver{}, nil, false)
 
 	if !called {
 		t.Error("custom factory should have been called")
@@ -276,25 +261,6 @@ func TestListSections_FallbackToDirectoryName(t *testing.T) {
 	}
 }
 
-func TestGenerate_LoadStylingConfigError(t *testing.T) {
-	contentDir, buildDir := setupTestContent(t, map[string]string{
-		"index.md": "# Title",
-	})
-
-	// Create an invalid styling config file
-	styleConfigPath := filepath.Join(t.TempDir(), "bad-styles.json")
-	_ = os.WriteFile(styleConfigPath, []byte(`{"elements": {"bad_key": "class"}}`), 0644)
-
-	gen := createTestGenerator(contentDir, buildDir).withStylingConfigPath(styleConfigPath)
-	err := gen.Generate()
-	if err == nil {
-		t.Fatal("expected error for invalid styling config")
-	}
-	if !strings.Contains(err.Error(), "styling") {
-		t.Errorf("error should mention styling, got %q", err.Error())
-	}
-}
-
 func TestGenerate_NonExistentContentDirError(t *testing.T) {
 	buildDir := t.TempDir()
 	gen := createTestGenerator("/nonexistent/content", buildDir).
@@ -335,7 +301,7 @@ func TestGenerate_PageGeneratorError(t *testing.T) {
 		"index.md": "# Title",
 	})
 
-	factory := func(markdownPath, htmlOutPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []section.Section, skipURLValidation bool) PageGenerator {
+	factory := func(markdownPath, htmlOutPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, sections []section.Section, skipURLValidation bool) PageGenerator {
 		return &fakePageGenerator{generateErr: fmt.Errorf("page generation failed")}
 	}
 
@@ -360,7 +326,7 @@ func TestValidate_ValidationError(t *testing.T) {
 		"index.md": "# Title",
 	})
 
-	factory := func(markdownPath, htmlOutPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []section.Section, skipURLValidation bool) PageGenerator {
+	factory := func(markdownPath, htmlOutPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, sections []section.Section, skipURLValidation bool) PageGenerator {
 		return &fakePageGenerator{validateErr: fmt.Errorf("validation failed")}
 	}
 
@@ -618,54 +584,6 @@ func TestIntegration_TitleExtraction(t *testing.T) {
 	}
 }
 
-func TestIntegration_StyleConfigApplied(t *testing.T) {
-	contentDir, buildDir := setupTestContent(t, map[string]string{
-		"index.md": "# Home\n",
-		"page.md":  "# Main Title\n\nA paragraph with a [link](https://example.com).\n\n> A blockquote\n\n- List item\n",
-	})
-
-	styleConfigPath := filepath.Join(t.TempDir(), "styles.json")
-	_ = os.WriteFile(styleConfigPath, []byte(`{
-		"elements": {
-			"heading1": "custom-h1-class",
-			"paragraph": "custom-p-class",
-			"link": "custom-link-class",
-			"blockquote": "custom-quote-class",
-			"list": "custom-list-class"
-		}
-	}`), 0644)
-
-	gen := createTestGenerator(contentDir, buildDir).
-		withStylingConfigPath(styleConfigPath).
-		withAssetsDir(filepath.Join(t.TempDir(), "empty-assets")).
-		withScriptsDir(filepath.Join(t.TempDir(), "empty-scripts"))
-	_ = os.MkdirAll(gen.assetsDir, 0755)
-	_ = os.MkdirAll(gen.scriptsDir, 0755)
-
-	err := gen.Generate()
-	if err != nil {
-		t.Fatalf("Generate() error = %v", err)
-	}
-
-	content, err := os.ReadFile(filepath.Join(buildDir, "page.html"))
-	if err != nil {
-		t.Fatalf("failed to read output: %v", err)
-	}
-
-	html := string(content)
-	checks := []string{
-		`class="custom-h1-class"`,
-		`class="custom-link-class"`,
-		`class="custom-quote-class"`,
-		`class="custom-list-class"`,
-	}
-	for _, check := range checks {
-		if !strings.Contains(html, check) {
-			t.Errorf("expected %q in output, got:\n%s", check, html)
-		}
-	}
-}
-
 func TestIntegration_InlineAttributesWithoutConfig(t *testing.T) {
 	contentDir, buildDir := setupTestContent(t, map[string]string{
 		"index.md": "# Home\n",
@@ -882,19 +800,5 @@ func TestIntegration_AssetPathConversion(t *testing.T) {
 	// So the correct relative path is ../assets/images/photo.png
 	if !strings.Contains(postHTML, `src="../assets/images/photo.png"`) {
 		t.Errorf("expected src=\"../assets/images/photo.png\" in output, got:\n%s", postHTML)
-	}
-}
-
-func TestIntegration_InvalidStyleConfigReturnsError(t *testing.T) {
-	invalidConfig := `{"elements": {"invalid_key": "some-class"}}`
-	_, err := styling.ParseConfig([]byte(invalidConfig))
-	if err == nil {
-		t.Error("ParseConfig should return error for invalid keys")
-	}
-	if !strings.Contains(err.Error(), "invalid_key") {
-		t.Errorf("error should mention invalid key, got: %v", err)
-	}
-	if !strings.Contains(err.Error(), "heading1") {
-		t.Errorf("error should list valid keys, got: %v", err)
 	}
 }

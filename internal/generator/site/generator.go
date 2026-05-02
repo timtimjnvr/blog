@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/timtimjnvr/blog/internal/generator/page/filesystem"
-	"github.com/timtimjnvr/blog/internal/generator/page/styling"
 	"github.com/timtimjnvr/blog/internal/generator/section"
 )
 
@@ -15,7 +14,7 @@ type (
 		Validate() error
 	}
 
-	pageGeneratorFactory func(sourceMDPath, destinationHTMLPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []section.Section, skipURLValidation bool) PageGenerator
+	pageGeneratorFactory func(sourceMDPath, destinationHTMLPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, sections []section.Section, skipURLValidation bool) PageGenerator
 
 	Option func(*Generator)
 )
@@ -23,19 +22,17 @@ type (
 // Generator is the site generator which allows to generate and validate the site
 // All files and directories attributes are relative to the project root.
 type Generator struct {
-	contentDir                string
-	assetsDir                 string
-	assetsOutDir              string
-	optionalStylingConfigPath string
-	buildDir                  string
-	scriptsDir                string
-	scriptsOutDir             string
-	skipURLValidation         bool
-	pageGeneratorFactory      pageGeneratorFactory
-	sections                  []section.Section
-	pagesGenerators           []PageGenerator
-	stylingConfig             *styling.Config
-	fs                        filesystem.FileSystem
+	contentDir           string
+	assetsDir            string
+	assetsOutDir         string
+	buildDir             string
+	scriptsDir           string
+	scriptsOutDir        string
+	skipURLValidation    bool
+	pageGeneratorFactory pageGeneratorFactory
+	sections             []section.Section
+	pagesGenerators      []PageGenerator
+	fs                   filesystem.FileSystem
 }
 
 // WithSkipURLValidation returns an Option that disables external URL validation.
@@ -45,17 +42,16 @@ func WithSkipURLValidation(skip bool) Option {
 
 func NewGenerator(opts ...Option) (*Generator, error) {
 	g := &Generator{
-		contentDir:                "./content/markdown",
-		buildDir:                  "./target/build",
-		assetsDir:                 "./content/assets",
-		assetsOutDir:              "./target/build/assets",
-		scriptsDir:                "./scripts",
-		scriptsOutDir:             "./target/build/scripts",
-		optionalStylingConfigPath: "./styles/styles.json",
-		sections:                  make([]section.Section, 0),
-		pagesGenerators:           make([]PageGenerator, 0),
-		pageGeneratorFactory:      defaultPageGeneratorFactory,
-		fs:                        filesystem.NewOSFileSystem(),
+		contentDir:           "./content/markdown",
+		buildDir:             "./target/build",
+		assetsDir:            "./content/assets",
+		assetsOutDir:         "./target/build/assets",
+		scriptsDir:           "./scripts",
+		scriptsOutDir:        "./target/build/scripts",
+		sections:             make([]section.Section, 0),
+		pagesGenerators:      make([]PageGenerator, 0),
+		pageGeneratorFactory: defaultPageGeneratorFactory,
+		fs:                   filesystem.NewOSFileSystem(),
 	}
 
 	for _, opt := range opts {
@@ -66,10 +62,6 @@ func NewGenerator(opts ...Option) (*Generator, error) {
 }
 
 func (g *Generator) Generate() error {
-	if err := g.loadStylingConfig(); err != nil {
-		return fmt.Errorf("failed to load styling configuration: %w", err)
-	}
-
 	if err := g.makeAllDirectories(); err != nil {
 		return fmt.Errorf("failed to create output directories: %w", err)
 	}

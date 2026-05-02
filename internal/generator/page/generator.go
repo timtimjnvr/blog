@@ -11,7 +11,6 @@ import (
 	"github.com/timtimjnvr/blog/internal/generator/page/html/validation"
 	"github.com/timtimjnvr/blog/internal/generator/page/markdown"
 	mdsubstitution "github.com/timtimjnvr/blog/internal/generator/page/markdown/substitution"
-	"github.com/timtimjnvr/blog/internal/generator/page/styling"
 )
 
 //go:embed page.html
@@ -20,7 +19,6 @@ var defaultTemplate string
 type Generator struct {
 	htmlPageTemplate      string
 	sourceMDPath          string
-	stylingConfig         styling.Config
 	buildDir              string
 	htmlContentBytes      []byte
 	destinationHTMLPath   string
@@ -36,7 +34,6 @@ func NewGenerator(
 	htmlOutputPath string,
 	buildDir string,
 	sectionName string,
-	stylingConfig styling.Config,
 	fs filesystem.FileSystem,
 	markdownSubstitutions *mdsubstitution.Registry,
 	HTMLSubstitutions *htmlsubstitution.Registry,
@@ -48,7 +45,6 @@ func NewGenerator(
 		destinationHTMLPath:   htmlOutputPath,
 		buildDir:              buildDir,
 		sectionName:           sectionName,
-		stylingConfig:         stylingConfig,
 		fs:                    fs,
 		markdownSubstitutions: markdownSubstitutions,
 		HTMLSubstitutions:     HTMLSubstitutions,
@@ -71,7 +67,7 @@ func (g *Generator) Generate() error {
 	}
 
 	// Convert marddown to HTML
-	htmlContent, err := markdown.NewConverter(&g.stylingConfig, g.sectionName).Convert([]byte(markdDownStringSourceContent))
+	htmlContent, err := markdown.NewConverter().Convert([]byte(markdDownStringSourceContent))
 	if err != nil {
 		return fmt.Errorf("failed to convert markdown content: %w", err)
 	}
