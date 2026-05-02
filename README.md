@@ -29,7 +29,7 @@ task dev
 ```
 blog/
 ├── main.go
-├── styles/                      # Tailwind CSS input and optional styling config
+├── styles/                      # Tailwind CSS input
 ├── scripts/                     # JavaScript files
 ├── internal/
 │   └── generator/
@@ -64,7 +64,6 @@ Markdown Files (content/markdown/)
 │      │   └─ {{list-child-articles}} → Markdown links    │
 │      │       to sibling .md files (title from H1)       │
 │      ├─ Markdown Converter (Goldmark + GFM)             │
-│      │   └─ Style Transformer (optional)                │
 │      ├─ HTML Substitution Registry                      │
 │      │   ├─ {{title}} → First H1 from markdown          │
 │      │   ├─ {{content}} → Converted HTML                │
@@ -91,28 +90,4 @@ CSS is built using the Tailwind Standalone CLI. Configuration is done in `styles
 
 * **Default behavior**: All Markdown content is wrapped in `<article class="prose prose-lg">`, which applies consistent typography styles to headings, paragraphs, links, code blocks, etc.
 
-* **Custom styling**: Create a `styles/styles.json` file to add CSS classes to specific elements:
-
-```json
-{
-  "elements": {
-    "heading1": "text-4xl font-bold",
-    "image": "rounded-lg shadow-md",
-    "link": "text-blue-600 hover:underline",
-    "blockquote": "border-l-4 border-gray-300 italic"
-  },
-  "contexts": {
-    "post": {
-      "heading1": "text-blue-900"
-    }
-  }
-}
-```
-
-  * Supported element keys: `heading1`, `heading2`, `heading3`, `heading4`, `heading5`, `heading6`, `paragraph`, `link`, `image`, `codeblock`, `code`, `blockquote`, `list`, `listitem`.
-
-  * Contexts: Files in `posts/` automatically get the `post` context, allowing context-specific styling.
-
-  * Validation: Invalid keys cause the generator to exit with an error listing valid options.
-
-* **Inline attributes**: For precise control on specific elements, use the inline attribute syntax directly in Markdown (take precedence over `styles.json`).
+* **Inline attributes**: For precise control on specific elements, use the inline attribute syntax directly in Markdown (e.g., `# Title {.my-class #my-id}`).

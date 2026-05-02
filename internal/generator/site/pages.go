@@ -12,7 +12,6 @@ import (
 	htmlsubstitutions "github.com/timtimjnvr/blog/internal/generator/page/html/substitution"
 	"github.com/timtimjnvr/blog/internal/generator/page/html/validation"
 	mdsubstitutions "github.com/timtimjnvr/blog/internal/generator/page/markdown/substitution"
-	"github.com/timtimjnvr/blog/internal/generator/page/styling"
 	"github.com/timtimjnvr/blog/internal/generator/section"
 )
 
@@ -50,7 +49,7 @@ func (g *Generator) generatePages() error {
 		}
 
 		htmlOutputPath := filepath.Join(g.buildDir, strings.TrimSuffix(pageFilePathRelToContentDir, ".md")+".html")
-		g.pagesGenerators = append(g.pagesGenerators, g.pageGeneratorFactory(markDownFilePath, htmlOutputPath, g.buildDir, pageSection, assetsPathTranslater, linksPathTranslater, g.stylingConfig, g.sections, g.skipURLValidation))
+		g.pagesGenerators = append(g.pagesGenerators, g.pageGeneratorFactory(markDownFilePath, htmlOutputPath, g.buildDir, pageSection, assetsPathTranslater, linksPathTranslater, g.sections, g.skipURLValidation))
 		return nil
 	})
 
@@ -73,12 +72,7 @@ func (g *Generator) generatePages() error {
 	return nil
 }
 
-func defaultPageGeneratorFactory(sourceMDPath, destinationHTMLPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, stylingConfig *styling.Config, sections []section.Section, skipURLValidation bool) PageGenerator {
-	var config styling.Config
-	if stylingConfig != nil {
-		config = *stylingConfig
-	}
-
+func defaultPageGeneratorFactory(sourceMDPath, destinationHTMLPath, buildDir, pageSection string, assetsPathTranslater, linksPathTranslater newPathResolver, sections []section.Section, skipURLValidation bool) PageGenerator {
 	var (
 		fs                    = filesystem.NewOSFileSystem()
 		markdownSubstitutions = mdsubstitutions.NewRegistry(sourceMDPath)
@@ -86,5 +80,5 @@ func defaultPageGeneratorFactory(sourceMDPath, destinationHTMLPath, buildDir, pa
 		validations           = validation.NewRegistry(sections, skipURLValidation)
 	)
 
-	return page.NewGenerator(sourceMDPath, destinationHTMLPath, buildDir, pageSection, config, fs, markdownSubstitutions, HTMLSubstitutions, validations)
+	return page.NewGenerator(sourceMDPath, destinationHTMLPath, buildDir, pageSection, fs, markdownSubstitutions, HTMLSubstitutions, validations)
 }

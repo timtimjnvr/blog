@@ -3,7 +3,6 @@ package markdown
 import (
 	"bytes"
 
-	"github.com/timtimjnvr/blog/internal/generator/page/styling"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
@@ -17,30 +16,14 @@ type Converter struct {
 }
 
 // NewConverter creates a new markdown converter with GFM extensions.
-// If styleConfig is nil, no custom styling is applied.
-// The context parameter allows context-specific styling (e.g., "post").
-func NewConverter(styleConfig *styling.Config, context string) *Converter {
-	parserOpts := []parser.Option{
-		// Enable inline attribute syntax: {.class #id key=value}
-		parser.WithAttribute(),
-		// Generate id attributes on headings for anchor navigation
-		parser.WithAutoHeadingID(),
-	}
-
-	// Add style transformer if config is provided
-	if styleConfig != nil {
-		transformer := styling.NewTransformer(styleConfig, context)
-		parserOpts = append(parserOpts,
-			parser.WithASTTransformers(
-				util.Prioritized(transformer, 100),
-			),
-		)
-	}
-
+func NewConverter() *Converter {
 	return &Converter{
 		md: goldmark.New(
 			goldmark.WithExtensions(extension.GFM),
-			goldmark.WithParserOptions(parserOpts...),
+			goldmark.WithParserOptions(
+				parser.WithAttribute(),
+				parser.WithAutoHeadingID(),
+			),
 			goldmark.WithRendererOptions(
 				renderer.WithNodeRenderers(
 					util.Prioritized(&HeadingRenderer{}, 100),

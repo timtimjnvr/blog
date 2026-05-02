@@ -10,20 +10,15 @@ import (
 	htmlsubstitution "github.com/timtimjnvr/blog/internal/generator/page/html/substitution"
 	"github.com/timtimjnvr/blog/internal/generator/page/html/validation"
 	mdsubstitution "github.com/timtimjnvr/blog/internal/generator/page/markdown/substitution"
-	"github.com/timtimjnvr/blog/internal/generator/page/styling"
 	"github.com/timtimjnvr/blog/internal/generator/section"
 )
 
 func newTestGenerator(t *testing.T, markdownPath, htmlOutputPath, buildDir, sectionName string, fs *filesystem.MemoryFileSystem) *Generator {
 	t.Helper()
-	config := styling.Config{
-		Elements: make(map[string]string),
-		Contexts: make(map[string]map[string]string),
-	}
 	mdSubs := mdsubstitution.NewRegistry(markdownPath)
 	subs := htmlsubstitution.NewRegistry(htmlOutputPath, markdownPath, nil, nil, nil, sectionName)
 	vals := validation.NewRegistry(nil, false)
-	return NewGenerator(markdownPath, htmlOutputPath, buildDir, sectionName, config, fs, mdSubs, subs, vals)
+	return NewGenerator(markdownPath, htmlOutputPath, buildDir, sectionName, fs, mdSubs, subs, vals)
 }
 
 func TestNewGenerator(t *testing.T) {
@@ -195,7 +190,6 @@ func TestGenerator_Generate_HTMLSubstitutionError(t *testing.T) {
 		"/build/notitle.html",
 		"/build",
 		"",
-		styling.Config{},
 		fs,
 		mdsubstitution.NewRegistryWithSubstituters(),
 		htmlSubs,
@@ -213,13 +207,9 @@ func TestGenerator_Generate_NavigationBar(t *testing.T) {
 		fs := filesystem.NewMemoryFileSystem()
 		fs.AddFile("/content/index.md", []byte("# Home\n\nWelcome."))
 
-		config := styling.Config{
-			Elements: make(map[string]string),
-			Contexts: make(map[string]map[string]string),
-		}
 		subs := htmlsubstitution.NewRegistry("/build/index.html", "/content/index.md", nil, nil, []section.Section{{DirName: "", DisplayName: "Accueil"}, {DirName: "posts", DisplayName: "Posts"}, {DirName: "about", DisplayName: "About"}}, "")
 		vals := validation.NewRegistry(nil, false)
-		g := NewGenerator("/content/index.md", "/build/index.html", "/build", "", config, fs, mdsubstitution.NewRegistry("/content/index.md"), subs, vals)
+		g := NewGenerator("/content/index.md", "/build/index.html", "/build", "", fs, mdsubstitution.NewRegistry("/content/index.md"), subs, vals)
 
 		err := g.Generate()
 		if err != nil {
@@ -250,13 +240,9 @@ func TestGenerator_Generate_NavigationBar(t *testing.T) {
 		fs := filesystem.NewMemoryFileSystem()
 		fs.AddFile("/content/posts/hello.md", []byte("# Hello\n\nPost content."))
 
-		config := styling.Config{
-			Elements: make(map[string]string),
-			Contexts: make(map[string]map[string]string),
-		}
 		subs := htmlsubstitution.NewRegistry("/build/posts/hello.html", "/content/posts/hello.md", nil, nil, []section.Section{{DirName: "", DisplayName: "Accueil"}, {DirName: "posts", DisplayName: "Posts"}, {DirName: "about", DisplayName: "About"}}, "posts")
 		vals := validation.NewRegistry(nil, false)
-		g := NewGenerator("/content/posts/hello.md", "/build/posts/hello.html", "/build", "posts", config, fs, mdsubstitution.NewRegistry("/content/posts/hello.md"), subs, vals)
+		g := NewGenerator("/content/posts/hello.md", "/build/posts/hello.html", "/build", "posts", fs, mdsubstitution.NewRegistry("/content/posts/hello.md"), subs, vals)
 
 		err := g.Generate()
 		if err != nil {
@@ -294,16 +280,12 @@ func TestGenerator_Generate_MarkdownSubstitutionError(t *testing.T) {
 	fs := filesystem.NewMemoryFileSystem()
 	fs.AddFile("/content/page.md", []byte("# Title\n\n{{my-placeholder}}\n\nContent."))
 
-	config := styling.Config{
-		Elements: make(map[string]string),
-		Contexts: make(map[string]map[string]string),
-	}
 	mdSubs := mdsubstitution.NewRegistryWithSubstituters(
 		fakeMarkdownSubstituter{placeholder: "{{my-placeholder}}", err: fmt.Errorf("substitution failed")},
 	)
 	subs := htmlsubstitution.NewRegistry("/build/page.html", "/content/page.md", nil, nil, nil, "")
 	vals := validation.NewRegistry(nil, false)
-	g := NewGenerator("/content/page.md", "/build/page.html", "/build", "", config, fs, mdSubs, subs, vals)
+	g := NewGenerator("/content/page.md", "/build/page.html", "/build", "", fs, mdSubs, subs, vals)
 
 	err := g.Generate()
 	if err == nil {
@@ -319,13 +301,9 @@ func TestGenerator_Validate(t *testing.T) {
 		fs := filesystem.NewMemoryFileSystem()
 		fs.AddFile("/content/page.md", []byte("# Page\n\nContent."))
 
-		config := styling.Config{
-			Elements: make(map[string]string),
-			Contexts: make(map[string]map[string]string),
-		}
 		subs := htmlsubstitution.NewRegistry("/build/page.html", "/content/page.md", nil, nil, nil, "")
 		vals := validation.NewRegistryWithValidators()
-		g := NewGenerator("/content/page.md", "/build/page.html", "/build", "", config, fs, mdsubstitution.NewRegistry("/content/page.md"), subs, vals)
+		g := NewGenerator("/content/page.md", "/build/page.html", "/build", "", fs, mdsubstitution.NewRegistry("/content/page.md"), subs, vals)
 
 		err := g.Generate()
 		if err != nil {

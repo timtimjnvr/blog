@@ -3,12 +3,10 @@ package markdown
 import (
 	"strings"
 	"testing"
-
-	"github.com/timtimjnvr/blog/internal/generator/page/styling"
 )
 
 func TestNewConverter(t *testing.T) {
-	converter := NewConverter(nil, "")
+	converter := NewConverter()
 	if converter == nil {
 		t.Fatal("NewConverter returned nil")
 		return
@@ -86,7 +84,7 @@ func TestConverter_Convert(t *testing.T) {
 		},
 	}
 
-	converter := NewConverter(nil, "")
+	converter := NewConverter()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -105,7 +103,7 @@ func TestConverter_Convert(t *testing.T) {
 }
 
 func TestConverter_Convert_ReturnsValidHTML(t *testing.T) {
-	converter := NewConverter(nil, "")
+	converter := NewConverter()
 
 	input := "# Title\n\nParagraph with **bold** and *italic*.\n\n- List item"
 	result, err := converter.Convert([]byte(input))
@@ -131,7 +129,7 @@ func TestConverter_Convert_ReturnsValidHTML(t *testing.T) {
 }
 
 func TestConverter_InlineAttributes(t *testing.T) {
-	converter := NewConverter(nil, "")
+	converter := NewConverter()
 
 	tests := []struct {
 		name     string
@@ -179,87 +177,4 @@ func TestConverter_InlineAttributes(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestConverter_InlineAttributesOverrideConfig(t *testing.T) {
-	// Test that inline attributes take precedence over styles.json config
-	config := &styling.Config{
-		Elements: map[string]string{
-			"heading1": "config-class",
-		},
-		Contexts: make(map[string]map[string]string),
-	}
-
-	converter := NewConverter(config, "")
-
-	// Inline attribute should override config
-	input := "# Title {.inline-class}"
-	result, err := converter.Convert([]byte(input))
-	if err != nil {
-		t.Fatalf("Convert() error = %v", err)
-	}
-
-	if !strings.Contains(result, `class="inline-class"`) {
-		t.Errorf("inline class should be present, got %q", result)
-	}
-}
-
-func TestConverter_ConfigAppliedWithoutInlineAttributes(t *testing.T) {
-	config := &styling.Config{
-		Elements: map[string]string{
-			"heading1": "from-config",
-			"link":     "link-style",
-		},
-		Contexts: make(map[string]map[string]string),
-	}
-
-	converter := NewConverter(config, "")
-
-	input := "# Title\n\n[Link](https://example.com)"
-	result, err := converter.Convert([]byte(input))
-	if err != nil {
-		t.Fatalf("Convert() error = %v", err)
-	}
-
-	if !strings.Contains(result, `class="from-config"`) {
-		t.Errorf("heading should have config class, got %q", result)
-	}
-	if !strings.Contains(result, `class="link-style"`) {
-		t.Errorf("link should have config class, got %q", result)
-	}
-}
-
-func TestConverter_ContextSpecificStyling(t *testing.T) {
-	config := &styling.Config{
-		Elements: map[string]string{
-			"heading1": "global-style",
-		},
-		Contexts: map[string]map[string]string{
-			"post": {
-				"heading1": "post-style",
-			},
-		},
-	}
-
-	t.Run("uses global style without context", func(t *testing.T) {
-		converter := NewConverter(config, "")
-		result, err := converter.Convert([]byte("# Title"))
-		if err != nil {
-			t.Fatalf("Convert() error = %v", err)
-		}
-		if !strings.Contains(result, `class="global-style"`) {
-			t.Errorf("should use global style, got %q", result)
-		}
-	})
-
-	t.Run("uses context style with post context", func(t *testing.T) {
-		converter := NewConverter(config, "post")
-		result, err := converter.Convert([]byte("# Title"))
-		if err != nil {
-			t.Fatalf("Convert() error = %v", err)
-		}
-		if !strings.Contains(result, `class="post-style"`) {
-			t.Errorf("should use post context style, got %q", result)
-		}
-	})
 }
