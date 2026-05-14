@@ -13,15 +13,15 @@ tasks:
   setup:
     desc: Install all required tools
     cmds:
-      - task: setup:golangci-lint
+      - task: setup:go
       - task: setup:tailwind
-      - go install golang.org/x/tools/cmd/deadcode@latest
       - echo "Setup complete!"
 
-  setup:golangci-lint:
+  setup:go:
     desc: Install golangci-lint
     cmds:
       - |
+        go install golang.org/x/tools/cmd/deadcode@latest
         if command -v golangci-lint &> /dev/null; then
           echo "golangci-lint already installed: $(golangci-lint --version)"
         else
@@ -54,11 +54,6 @@ tasks:
         # Install typography
         npm install -g @tailwindcss/typography
 
-  default:
-    desc: Run all validation tasks
-    cmds:
-      - task: validate
-
   validate:
     desc: Run all validation (fmt, lint, test, build)
     cmds:
@@ -80,8 +75,6 @@ tasks:
 
   lint:
     desc: Run linters
-    deps:
-      - setup
     cmds:
       - |
         golangci-lint run ./...
@@ -107,16 +100,6 @@ tasks:
       - go tool cover -html={{.BUILD_DIR}}/coverage.out -o
         {{.BUILD_DIR}}/coverage.html
       - echo "Coverage report generated at {{.BUILD_DIR}}/coverage.html"
-
-  test:unit:
-    desc: Run only unit tests (internal packages)
-    cmds:
-      - go test ./internal/...
-
-  test:integration:
-    desc: Run only integration tests
-    cmds:
-      - go test -run "TestSiteGeneration|TestLinksAreValid|TestMarkdownFiles" .
 
   build:
     desc: Build the Go binary
@@ -165,15 +148,15 @@ tasks:
     cmds:
       - rm -rf {{.BUILD_DIR}}
 
+  serve:
+    deps:
+    - task: generate
+    cmds:
+        - browser-sync start --no-ui --server {{.BUILD_SITE_DIR}}
+
   dev:
     desc: Serve locally with live reload
     watch: true
     deps:
       - task: generate
-    cmds:
-      - |
-        if ! pgrep -f "browser-sync" > /dev/null; then
-          browser-sync start --server {{.BUILD_SITE_DIR}} --watch &
-          BROWSER_SYNC_PID=$!
-          trap "kill $BROWSER_SYNC_PID 2>/dev/null" EXIT
-        fi
+    cmd: browser-sync reload
